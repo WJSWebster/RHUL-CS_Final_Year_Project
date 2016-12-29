@@ -1,0 +1,27 @@
+PseudoCode:
+
+[Creep:
+    Map:
+      Is map stored as array (such as with game of life)? No, probably not.
+
+      One possible way: entity(creep) travels to the next 'checkpoint' with each containing the coordinates of the next checkpoint (and direction of said checkpoint - for tower's sake (see below)), such that once an entity travels to said checkpoint, it immediately begins traveling to the next coordinate given to it (in height x width of canvas).
+
+        Extra:
+        The creeps path may only move North, South, East, West? This means that each entity is then given a 'direction' variable (see below).
+]
+
+[Tower:
+    Targeting:
+      When a creep is 'spawned', it is assigned a 'place' (ie: 1st, 2nd, 3rd etc). The tower (depending on tower type) targets the then current position of the 1st place creep.
+
+      Note: that unless the tower's projectile is homing (missiles(constantly updating destination coordinates), laser beam etc), the tower will miss it's attack.
+
+      Therefore, the tower will need to calculate a predicted position based on the front creep's current position, direction (see above) & that specific creep species' speed (a variable available in a creep index, which stores all static characteristics of all creeps (see 'bible')) AND whether or not there is a checkpoint in between the creep's current position and destination position (in which case the destination would need to be moved to follow the direction of the checkpoint).
+]
+
+
+def spam():
+eggs = 12
+return eggs
+
+print spam() #doesnt make sense

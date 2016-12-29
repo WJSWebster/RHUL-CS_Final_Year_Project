@@ -1,0 +1,6 @@
+A list of python packages that will be required for my project:
+- simplegui (codeSkulptor only - needed for making 'frames' aka windows)
+INSTEAD - Pygame (an actual python package which is universally used)
+- math (only needed if 2d collision math required (unlikely))
+- sys (used for exiting program (such as when 'quit game' button is pressed: "sys.exit()")
+- random (used to generate random numbers from a seed - either totally random, or from a range)
