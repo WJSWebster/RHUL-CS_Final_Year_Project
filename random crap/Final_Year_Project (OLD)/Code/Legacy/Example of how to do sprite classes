@@ -1,0 +1,121 @@
+import random,math,sys,os
+import pygame
+from pygame.locals import *
+
+pygame.init() #Initializing Pygame
+
+#Colors
+black=(0,0,0)
+
+#Screen
+screen=pygame.display.set_mode((1200,800),0,0)
+pygame.display.set_caption("Nero's Sandbox")
+pygame.mouse.set_visible(False)
+clock=pygame.time.Clock()
+fps=40
+
+#Game Functions:
+
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+def numgen(x,y):
+    return random.randint(x,y)
+
+#Loop Variables
+tri=2
+
+#Groups:
+
+allsprites = pygame.sprite.Group()
+alltiles = pygame.sprite.Group()
+allmice = pygame.sprite.Group()
+
+#Mouse Classes
+
+class Pointy(pygame.sprite.DirtySprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image = pygame.image.load('redsword.png').convert() #31x32 image
+        self.image.set_colorkey(black)
+        self.rect=self.image.get_rect()
+        self.set=pygame.sprite.Group()
+        self.add(allmice, allsprites, self.set)
+        pygame.sprite.RenderPlain((self.set,allmice,allsprites))
+
+    def update(self):
+        screen.fill(black)
+        alltiles.draw(screen)
+        if event.type == pygame.MOUSEMOTION:
+            pos = pygame.mouse.get_pos()
+            self.rect.topright = pos
+            self.set.draw(screen)
+
+#Tile Sprites - only one rect is being recognized.
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, graphic):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load(graphic).convert()
+        self.image = pygame.transform.scale((self.image),(50,50))
+        self.rect=self.image.get_rect()
+        self.add(alltiles, allsprites)
+        self.set=pygame.sprite.RenderPlain((self))
+
+    def update(self, x, y):
+        pos = (x,y)
+        self.rect.topleft = pos
+
+#Micers
+pointy1=Pointy()
+
+#Game Loops
+
+while True:  #Ensures all loops within program are constantly called when conditions are met.
+    screen.fill(black)
+    while tri==2:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                terminate()
+        pygame.display.flip()
+        x = 0
+        y = 50
+        w = 0
+        while  x!=600:
+               x=x+50
+               w = w+1
+               if w%2==0:
+                    purpletile1=Tile('purplesquare.png')
+                    purpletile1.set.update(x,y)
+                    purpletile1.set.draw(screen)
+               else:
+                   c=numgen(1,2)
+                   if c==1:
+                           bluetile1=Tile('lightbluesquare.png')
+                           bluetile1.set.update(x,y)
+                           bluetile1.set.draw(screen)
+                   if c==2:
+                           redtile1=Tile('redsquare.png')
+                           redtile1.set.update(x,y)
+                           redtile1.set.draw(screen)
+               if x>=600 and y!=450:
+                    if y<450:
+                        x = 0
+                        y = y+50
+                        w=w-1
+                    if y>=450:
+                       tri=3
+
+    while tri==3:
+        for event in pygame.event.get():
+           if event.type == QUIT:
+               terminate()
+           alltiles.draw(screen)
+           pointy1.set.update()
+           pointy1.set.draw(screen)
+           pygame.display.flip()
+           clock.tick(fps)
+           if pygame.sprite.collide_rect(pointy1,bluetile1):
+               print('blue')
