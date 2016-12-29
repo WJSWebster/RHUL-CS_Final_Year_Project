@@ -1,3 +1,5 @@
+from Sprite import *  # cannot render because makes calls to 'surface'
+from Tower import *
 import pygame, math, random, sys
 
 # Global variables for now:
@@ -24,6 +26,12 @@ red = (200, 0, 0)
 bright_red = (255, 0, 0)
 orange = (227, 150, 0)
 bright_orange = (255, 165, 0)
+
+
+creep_Count = 1  # debug - will initialise 0
+# OR:   (investigate)
+creep_List = []
+
 
 creep_Speed = 1  # temporary - later refer to "bible"
 hovering = False  # another temp value, while trying to figure out best stratergy for spawning in towers.
@@ -116,15 +124,16 @@ def main():
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0] / 2.2), int(map_Size[1] / 2.2)))
 	# should probs implement a 'try:, except: ' for each image render
 
+	# creating and adding initial creep object
+	# initial_creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
+	# creep_List.append(initial_creep)
+
 	flagCoords = getFlagCoords()
 	flag_Size = 30
 
 	# spawning checkpoint flags on mapFlags
 	checkpointFlag_Img = pygame.image.load("Graphics/checkpointFlag.jpg")
 	checkpointFlag_Img = pygame.transform.scale(checkpointFlag_Img, (flag_Size, flag_Size))
-
-	# spawning creep with sprite class
-	test_creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
 
@@ -133,13 +142,17 @@ def main():
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
 		#  button("Spawn creep", 200, 50, 250, 50, red, bright_red
 		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", "placeTower")
+		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
 
 		surface.blit(temp_MapImg, map_Coords)
 
+		"""
+		# DEBUG
 		# blit flags on map
-		for i in flagCoords:  # currently not in it's own sprite class
+		for i in flagCoords:
 			mapFlag_CoordX, mapFlag_CoordY = i
 			surface.blit(checkpointFlag_Img, ((mapFlag_CoordX), (mapFlag_CoordY)))
+		"""
 
 		# note: this is bullshit - CORRECT
 		if towerCreated:
@@ -153,19 +166,21 @@ def main():
 					pygame.mouse.set_visible(True)
 			print test_tower.hover
 			test_tower.render()
-		# print test_tower.hover
 
+		"""
 		# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
 		t = pygame.time.get_ticks()
 		# deltaTime in seconds.
 		getTicksLastFrame = t
 		deltaTime = (t - getTicksLastFrame) / 1000.0
 		# print deltaTime
+		"""
 
-		# creep pathfinding
-		if not test_creep.pathComplete:
-			creepPathFollow(test_creep, flagCoords)
-			test_creep.render()
+		for i in creep_List:
+			# creep pathfinding
+			if not i.pathComplete:
+				i.creepPathFollow(flagCoords)
+				i.render()
 
 		pass
 		for event in pygame.event.get():
@@ -180,54 +195,50 @@ def getFlagCoords():
 
 	flagCoords = []
 	for mx, my in mapFlags:
-		flagCoords.append((((mx * 80 / 2.2) + map_Coords[0]), ((my * 80 / 2.2) + map_Coords[1])))
-
+		flagCoords.append(((((mx - 1) * 80 / 2.2) + map_Coords[0]), (((my - 1) * 80 / 2.2) + map_Coords[1])))  # note: this may be problematic if x or y = 1?
 	return flagCoords
 
-
-def creepPathFollow(creep, flagCoords):
-	if creep.flagNo == len(flagCoords) + 1:
-		print creep, ": Complete"
-		creep.pathComplete = True
-	else:
-		if (flagCoords[creep.flagNo][0] + 0.5) > creep.x > (flagCoords[creep.flagNo][0] - 0.5) and (flagCoords[creep.flagNo][1] + 0.5) > creep.y > (flagCoords[creep.flagNo][1] - 0.5):
-			creep.flagNo += 1
-			print "flagNo = ", creep.flagNo
-		else:
-			if not (flagCoords[creep.flagNo][0] + 0.5) > creep.x > (flagCoords[creep.flagNo][0] - 0.5):
-				if creep.x < flagCoords[creep.flagNo][0]:
-					creep.direction = 'EAST'
-					creep.x += creep_Speed
-					# print creep.x, " < ", flagCoords[flagNo][0]
-				elif creep.x > flagCoords[creep.flagNo][0]:
-					creep.direction = 'WEST'
-					creep.x -= creep_Speed
-					# print creep.x, " > ", flagCoords[flagNo][0]
-			elif not (flagCoords[creep.flagNo][1] + 0.5) > creep.y > (flagCoords[creep.flagNo][1] - 0.5):
-				if creep.y < flagCoords[creep.flagNo][1] + 0.5:
-					creep.direction = 'SOUTH'
-					creep.y += creep_Speed
-				elif creep.y > flagCoords[creep.flagNo][1]:
-					creep.direction = 'NORTH'
-					creep.y -= creep_Speed
-		# print "x = ", creep.x, ", y = ", creep.y
-
+def addCreep():
+	new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
+	creep_List.append(new_Creep)
 
 class Sprite:
 	def __init__(self, x, y):
 		self.x = int(x)
 		self.y = int(y)
-		"""
-		else:  # for when placing towers
-			self.x = mouse[0]
-			self.y = mouse[1]
-		"""
 
 		self.size = 28
 		self.direction = 'WEST'
 
 		self.flagNo = 0
 		self.pathComplete = False
+
+	def creepPathFollow(self, flagCoords):
+		if self.flagNo == len(flagCoords) + 1:
+			print self, ": Complete"
+			self.pathComplete = True
+		else:
+			if (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5) and (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
+				self.flagNo += 1
+				print "flagNo = ", self.flagNo
+			else:
+				if not (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5):
+					if self.x < flagCoords[self.flagNo][0]:
+						self.direction = 'EAST'
+						self.x += creep_Speed
+						# print self.x, " < ", flagCoords[flagNo][0]
+					elif self.x > flagCoords[self.flagNo][0]:
+						self.direction = 'WEST'
+						self.x -= creep_Speed
+						# print self.x, " > ", flagCoords[flagNo][0]
+				elif not (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
+					if self.y < flagCoords[self.flagNo][1] + 0.5:
+						self.direction = 'SOUTH'
+						self.y += creep_Speed
+					elif self.y > flagCoords[self.flagNo][1]:
+						self.direction = 'NORTH'
+						self.y -= creep_Speed
+			# print "x = ", self.x, ", y = ", self.y
 
 	def render(self):
 		if self.direction == 'WEST':
@@ -245,7 +256,7 @@ class Sprite:
 
 def placeTower():
 	new_Tower = Tower(mouse[0], mouse[1], True)
-	return new_Tower
+	tower_List.append(new_Tower)
 
 class Tower:
 	def __init__(self, x, y, hover):

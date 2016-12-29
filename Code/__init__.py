@@ -1,2 +1,2 @@
-from Sprite import Sprite
-from Tower import Tower
+#from Sprite import *  # doesnt work???
+#from Tower import *
