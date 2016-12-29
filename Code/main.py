@@ -27,14 +27,11 @@ bright_red = (255, 0, 0)
 orange = (227, 150, 0)
 bright_orange = (255, 165, 0)
 
+button_State = 0
 
-creep_Count = 1  # debug - will initialise 0
-# OR:   (investigate)
 creep_List = []
-
-
 creep_Speed = 1  # temporary - later refer to "bible"
-hovering = False  # another temp value, while trying to figure out best stratergy for spawning in towers.
+tower_List = []
 
 # rendering 'canvas':
 canvas_dimensions = (canvas_width, canvas_height)
@@ -49,6 +46,8 @@ def text_objects(text, font, colour):  # why font?
 
 
 def button(msg, x, y, w, h, colour, action=None):  # change variable names
+	global button_State
+
 	mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 	click = pygame.mouse.get_pressed()   # " "
 
@@ -57,12 +56,16 @@ def button(msg, x, y, w, h, colour, action=None):  # change variable names
 
 	if x + w > mouse[0] > x and y + h > mouse[1] > y:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour))
+		print "button_State[1]: ", button_State
 		if click[0] == 1:
 			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour))
-			if action() is not None and event.type == pygame.MOUSEBUTTONUP:
-				action()
-			if action == "placeTower" and event.type == pygame.MOUSEBUTTONUP:
-				return True
+			button_State = 1
+			print "button_State[2]: ", button_State
+		if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
+		#event.type == pygame.MOUSEBUTTONUP
+			button_State = 0
+			print "button_State[3]: ", button_State
+			action()
 
 	else:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour))
@@ -136,12 +139,13 @@ def main():
 	checkpointFlag_Img = pygame.transform.scale(checkpointFlag_Img, (flag_Size, flag_Size))
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
+		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
+		click = pygame.mouse.get_pressed()   # " "
 
 		surface.blit(background_Img, (0, 0))
 
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
-		#  button("Spawn creep", 200, 50, 250, 50, red, bright_red
-		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", "placeTower")
+		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)
 		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
 
 		surface.blit(temp_MapImg, map_Coords)
@@ -154,7 +158,8 @@ def main():
 			surface.blit(checkpointFlag_Img, ((mapFlag_CoordX), (mapFlag_CoordY)))
 		"""
 
-		# note: this is bullshit - CORRECT
+		"""
+		# note: this is ******** - CORRECT
 		if towerCreated:
 			test_tower = placeTower()
 			towerCreated = False
@@ -166,6 +171,21 @@ def main():
 					pygame.mouse.set_visible(True)
 			print test_tower.hover
 			test_tower.render()
+		"""
+
+		for i in tower_List:
+			if i.hover:
+				i.x, i.y = mouse
+				if click[0] == 1:
+					i.hover = False
+					pygame.mouse.set_visible(True)
+			i.render()
+
+		for i in creep_List:
+			# creep pathfinding
+			if not i.pathComplete:
+				i.creepPathFollow(flagCoords)
+				i.render()
 
 		"""
 		# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
@@ -175,12 +195,6 @@ def main():
 		deltaTime = (t - getTicksLastFrame) / 1000.0
 		# print deltaTime
 		"""
-
-		for i in creep_List:
-			# creep pathfinding
-			if not i.pathComplete:
-				i.creepPathFollow(flagCoords)
-				i.render()
 
 		pass
 		for event in pygame.event.get():
@@ -269,7 +283,7 @@ class Tower:
 		if self.hover:
 			# background = pygame.Display.set_mode()
 			tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_Transparent.png")
-			#  pygame.mouse.set_visible(False)
+			pygame.mouse.set_visible(False)
 			#  pygame.mouse.set_cursor  # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
 		else:
 			# if 'target_creep' is right of tower: use "Tower01_E.png", etc...
