@@ -29,9 +29,12 @@ bright_orange = (255, 165, 0)
 
 button_State = 0
 
+# these all need to be moved to within game method
 creep_List = []
 creep_Speed = 1  # temporary - later refer to "bible"
 tower_List = []
+
+heartHealth = 20
 
 # rendering 'canvas':
 canvas_dimensions = (canvas_width, canvas_height)
@@ -56,15 +59,12 @@ def button(msg, x, y, w, h, colour, action=None):  # change variable names
 
 	if x + w > mouse[0] > x and y + h > mouse[1] > y:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour))
-		print "button_State[1]: ", button_State
 		if click[0] == 1:
 			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour))
 			button_State = 1
-			print "button_State[2]: ", button_State
 		if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
 		#event.type == pygame.MOUSEBUTTONUP
 			button_State = 0
-			print "button_State[3]: ", button_State
 			action()
 
 	else:
@@ -109,10 +109,6 @@ def intro_menu():
 def main():
 	pygame.display.set_caption("Will's TD Game -- Game")
 
-	global deltaTime
-	global getTicksLastFrame
-	global hovering
-
 	# is any of this stuff necessary???
 	# rendering 'canvas':
 	canvas_dimensions = (canvas_width, canvas_height)
@@ -150,27 +146,21 @@ def main():
 
 		surface.blit(temp_MapImg, map_Coords)
 
+		if heartHealth <= 0:
+			TextSurf, TextRect = text_objects("Game Over", largeText, red)
+			TextRect.center = (canvas_width/2, canvas_height/2)
+			surface.blit(TextSurf, TextRect)
+		else:
+			TextSurf, TextRect = text_objects(("Heart Health: %s" % heartHealth), smallText, white)
+			TextRect.center = (150, 600)
+			surface.blit(TextSurf, TextRect)
+
 		"""
 		# DEBUG
 		# blit flags on map
 		for i in flagCoords:
 			mapFlag_CoordX, mapFlag_CoordY = i
 			surface.blit(checkpointFlag_Img, ((mapFlag_CoordX), (mapFlag_CoordY)))
-		"""
-
-		"""
-		# note: this is ******** - CORRECT
-		if towerCreated:
-			test_tower = placeTower()
-			towerCreated = False
-		if 'test_tower' in locals():
-			if test_tower.hover:
-				test_tower.x, test_tower.y = mouse
-				if click[0] == 1:
-					test_tower.hover = False
-					pygame.mouse.set_visible(True)
-			print test_tower.hover
-			test_tower.render()
 		"""
 
 		for i in tower_List:
@@ -182,13 +172,18 @@ def main():
 			i.render()
 
 		for i in creep_List:
-			# creep pathfinding
-			if not i.pathComplete:
-				i.creepPathFollow(flagCoords)
+			if not creepHealthCheck(i):
+				if not i.pathComplete:
+					i.creepPathFollow(flagCoords)
+				else:
+					i.attackCheck()
 				i.render()
 
 		"""
 		# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
+		global deltaTime
+		global getTicksLastFrame
+
 		t = pygame.time.get_ticks()
 		# deltaTime in seconds.
 		getTicksLastFrame = t
@@ -216,54 +211,70 @@ def addCreep():
 	new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
 	creep_List.append(new_Creep)
 
+def creepHealthCheck(creep):
+	if creep.health == 0:
+		creepIndex = creep_List.index(creep)
+		creep_List.pop(creepIndex)
+		return True
+	else:
+		return False
+
+
 class Sprite:
 	def __init__(self, x, y):
 		self.x = int(x)
 		self.y = int(y)
 
 		self.size = 28
-		self.direction = 'WEST'
+		self.direction = 'West'
 
 		self.flagNo = 0
 		self.pathComplete = False
 
+		self.health = 5  # this is the default for the example sprite atm
+
+		self.attackDamage = 2 # again, a default stat for now...
+		self.attackFrameCount = 0
+		self.attackSpeed = 30  # the number of frames before creep can attack again
+
 	def creepPathFollow(self, flagCoords):
-		if self.flagNo == len(flagCoords) + 1:
+		if self.flagNo == len(flagCoords):
 			print self, ": Complete"
 			self.pathComplete = True
 		else:
 			if (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5) and (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
 				self.flagNo += 1
-				print "flagNo = ", self.flagNo
+				print self, " flagNo = ", self.flagNo
 			else:
 				if not (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5):
 					if self.x < flagCoords[self.flagNo][0]:
-						self.direction = 'EAST'
+						self.direction = 'East'
 						self.x += creep_Speed
 						# print self.x, " < ", flagCoords[flagNo][0]
 					elif self.x > flagCoords[self.flagNo][0]:
-						self.direction = 'WEST'
+						self.direction = 'West'
 						self.x -= creep_Speed
 						# print self.x, " > ", flagCoords[flagNo][0]
 				elif not (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
 					if self.y < flagCoords[self.flagNo][1] + 0.5:
-						self.direction = 'SOUTH'
+						self.direction = 'South'
 						self.y += creep_Speed
 					elif self.y > flagCoords[self.flagNo][1]:
-						self.direction = 'NORTH'
+						self.direction = 'North'
 						self.y -= creep_Speed
 			# print "x = ", self.x, ", y = ", self.y
 
-	def render(self):
-		if self.direction == 'WEST':
-			creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_W.png")
-		elif self.direction == 'NORTH':
-			creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_N.png")
-		elif self.direction == 'SOUTH':
-			creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_S.png")
-		elif self.direction == 'EAST':
-			creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_E.png")
+	def attackCheck(self):
+		global heartHealth
+		if self.attackFrameCount == self.attackSpeed:
+			# play attack animation - would have to be a loop in of itself
+			heartHealth = heartHealth - self.attackDamage
+			self.attackFrameCount = 0
+		else:
+			self.attackFrameCount = self.attackFrameCount + 1
 
+	def render(self):
+		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_%s.png" % (self.direction))
 		creep_Img = pygame.transform.scale(creep_Img, (self.size, self.size))
 		surface.blit(creep_Img, (self.x, self.y))
 		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))
@@ -276,8 +287,27 @@ class Tower:
 	def __init__(self, x, y, hover):
 		self.x = x
 		self.y = y
+
 		self.size = 28
+		# self.target = creep_List[0]
+		self.direction = "None"
+
 		self.hover = hover
+
+	def targetFinder(self):
+		target = creep_List[0]
+		# note: creep_List[0] means that the target is always the one at the front
+
+		# if target is within range: " ", else self.direction = "None"
+		if target.x > self.x:
+			self.direction = "North"
+		elif target.x < self.x:
+			self.direction = "South"
+		if target.y > self.y:
+			self.direction = "East"
+		elif target.y < self.y:
+			self.direction = "West"
+		# need a section to account for creep speed, time of projectile and possible corners
 
 	def render(self):
 		if self.hover:
@@ -286,8 +316,12 @@ class Tower:
 			pygame.mouse.set_visible(False)
 			#  pygame.mouse.set_cursor  # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
 		else:
+			# self.targetFinder()
+			if self.direction == "None":
+				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01.png")
+			else:
+				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction))
 			# if 'target_creep' is right of tower: use "Tower01_E.png", etc...
-			tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01.png")
 
 		tower_Img = pygame.transform.scale(tower_Img, (self.size, self.size))
 		surface.blit(tower_Img, (self.x, self.y))
