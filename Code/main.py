@@ -6,9 +6,9 @@ import pygame, math, random, sys
 canvas_width = 1000
 canvas_height = 800
 
-map_Size = (1760, 1440)
+map_Size = ((1760 / 2.2), (1440 / 2.2))
 map_Coords = (20, 140)
-map_Entrance = (((map_Size[0] / 2.2) + map_Coords[0]), ((((map_Size[1] / 2.2) / 2) + map_Coords[1]) - 53))
+map_Entrance = ((map_Size[0] + map_Coords[0]),(((map_Size[1] + map_Coords[1]) / 2) + 12))  # temporary - depends on map type
 
 pygame.init()
 
@@ -120,7 +120,7 @@ def main():
 
 	# loading temp map background
 	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
-	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0] / 2.2), int(map_Size[1] / 2.2)))
+	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
 	# should probs implement a 'try:, except: ' for each image render
 
 	# creating and adding initial creep object
@@ -166,7 +166,9 @@ def main():
 		for i in tower_List:
 			if i.hover:
 				i.x, i.y = mouse
-				if click[0] == 1:
+				print "mouse[0]", mouse[0] <= (map_Coords[0] + map_Size[0])
+				print "mouse[1]", mouse[1] <= (map_Coords[1] + map_Size[1])
+				if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
 					i.hover = False
 					pygame.mouse.set_visible(True)
 			i.render()
@@ -214,6 +216,7 @@ def addCreep():
 def creepHealthCheck(creep):
 	if creep.health == 0:
 		creepIndex = creep_List.index(creep)
+		print creep, "Died"
 		creep_List.pop(creepIndex)
 		return True
 	else:
@@ -231,7 +234,7 @@ class Sprite:
 		self.flagNo = 0
 		self.pathComplete = False
 
-		self.health = 5  # this is the default for the example sprite atm
+		self.health = 10  # this is the default for the example sprite atm
 
 		self.attackDamage = 2 # again, a default stat for now...
 		self.attackFrameCount = 0
@@ -264,6 +267,10 @@ class Sprite:
 						self.y -= creep_Speed
 			# print "x = ", self.x, ", y = ", self.y
 
+	def attacked(self, damage):
+		self.health = self.health - damage
+		creepHealthCheck(self)
+
 	def attackCheck(self):
 		global heartHealth
 		if self.attackFrameCount == self.attackSpeed:
@@ -291,13 +298,29 @@ class Tower:
 		self.size = 28
 		# self.target = creep_List[0]
 		self.direction = "None"
-
 		self.hover = hover
 
+		self.damage = 2 # again, a default stat for now...
+
+		self.attacking = False
+		self.attackSpeed = 120  # dependent on tower
+		self.attackFrameCount = 0
+		self.target = None
+		self.targetXInitial = None
+		self.targetYInitial = None
+		self.shadow_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/Shadow.png"), (self.size, self.size))
+		self.explosion_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/Explosion.png"), (self.size, self.size))
+
 	def targetFinder(self):
-		target = creep_List[0]
+		if not self.attacking:  # wont even be tested unless attacking is False (pointless?)
+			if len(creep_List) != 0:
+				self.target = creep_List[0]
+				return True
+			else:
+				return False
 		# note: creep_List[0] means that the target is always the one at the front
 
+		"""
 		# if target is within range: " ", else self.direction = "None"
 		if target.x > self.x:
 			self.direction = "North"
@@ -308,6 +331,23 @@ class Tower:
 		elif target.y < self.y:
 			self.direction = "West"
 		# need a section to account for creep speed, time of projectile and possible corners
+		"""
+
+	def cannonBallAttack(self):
+		if not self.attacking:
+			if self.targetFinder():
+				self.targetXInitial, self.targetYInitial = self.target.x, self.target.y
+				self.attacking = True
+		else:
+			if self.attackFrameCount == self.attackSpeed:
+				surface.blit(self.explosion_Img, (self.targetXInitial, self.targetYInitial))
+				self.target.attacked(self.damage)
+				self.attacking = False
+				self.target, self.targetXInitial, self.targetYInitial = None, None, None
+				self.attackFrameCount = 0
+			else:
+				self.attackFrameCount = self.attackFrameCount + 1
+				surface.blit(self.shadow_Img, (self.targetXInitial, self.targetYInitial))
 
 	def render(self):
 		if self.hover:
@@ -316,15 +356,17 @@ class Tower:
 			pygame.mouse.set_visible(False)
 			#  pygame.mouse.set_cursor  # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
 		else:
-			# self.targetFinder()
+			self.cannonBallAttack()
 			if self.direction == "None":
 				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01.png")
 			else:
 				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction))
-			# if 'target_creep' is right of tower: use "Tower01_E.png", etc...
 
 		tower_Img = pygame.transform.scale(tower_Img, (self.size, self.size))
 		surface.blit(tower_Img, (self.x, self.y))
+
+		if not self.hover:
+			self.cannonBallAttack()
 
 
 if __name__ == "__main__":  # https://goo.gl/1CRvRx & https://goo.gl/xF4xOF
