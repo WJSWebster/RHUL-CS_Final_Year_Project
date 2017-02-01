@@ -1,5 +1,6 @@
-from Sprite import *  # cannot render because makes calls to 'surface'
-from Tower import *
+#from Sprite import *  # cannot render because makes calls to 'surface'
+#from Tower import *
+#import __ini__
 import pygame, math, random, sys
 
 # Global variables for now:
@@ -26,6 +27,10 @@ red = (200, 0, 0)
 bright_red = (255, 0, 0)
 orange = (227, 150, 0)
 bright_orange = (255, 165, 0)
+map_green = (70, 147, 65)
+map_yellow = (249, 170, 10)
+map_grey = (135, 135, 135)
+
 
 button_State = 0
 
@@ -33,6 +38,7 @@ button_State = 0
 creep_List = []
 creep_Speed = 1  # temporary - later refer to "bible"
 tower_List = []
+grid_List = []
 
 heartHealth = 20
 
@@ -50,12 +56,13 @@ def text_objects(text, font, colour):  # why font?
 
 def button(msg, x, y, w, h, colour, action=None):  # change variable names
 	global button_State
-
 	mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 	click = pygame.mouse.get_pressed()   # " "
 
-	#if click[0] == 1:
-		#print "mouse position: ", mouse
+	"""
+	if click[0] == 1:
+		print "mouse position: ", mouse
+	"""
 
 	if x + w > mouse[0] > x and y + h > mouse[1] > y:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour))
@@ -93,10 +100,12 @@ def intro_menu():
 	surface.blit(TextSurf, TextRect)
 
 	beginButtonYPos = (canvas_width / 3)
+	makeButtonYPos = (canvas_width / 2)
 	quitButtonYPos = (beginButtonYPos * 2)
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
 		button("Begin", beginButtonYPos, 450, 100, 50, "Blue", main)
+		button("Make Map", makeButtonYPos, 450, 150, 50, "Orange", makeMap)
 		button("Quit", quitButtonYPos, 450, 100, 50, "Red", pygame_quit)
 
 		pass
@@ -123,16 +132,13 @@ def main():
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
 	# should probs implement a 'try:, except: ' for each image render
 
-	# creating and adding initial creep object
-	# initial_creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
-	# creep_List.append(initial_creep)
-
+	"""
 	flagCoords = getFlagCoords()
 	flag_Size = 30
-
 	# spawning checkpoint flags on mapFlags
 	checkpointFlag_Img = pygame.image.load("Graphics/checkpointFlag.jpg")
 	checkpointFlag_Img = pygame.transform.scale(checkpointFlag_Img, (flag_Size, flag_Size))
+	"""
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
@@ -166,8 +172,6 @@ def main():
 		for i in tower_List:
 			if i.hover:
 				i.x, i.y = mouse
-				print "mouse[0]", mouse[0] <= (map_Coords[0] + map_Size[0])
-				print "mouse[1]", mouse[1] <= (map_Coords[1] + map_Size[1])
 				if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
 					i.hover = False
 					pygame.mouse.set_visible(True)
@@ -190,7 +194,7 @@ def main():
 		# deltaTime in seconds.
 		getTicksLastFrame = t
 		deltaTime = (t - getTicksLastFrame) / 1000.0
-		# print deltaTime
+		print deltaTime
 		"""
 
 		pass
@@ -199,9 +203,128 @@ def main():
 				pygame_quit()
 		pygame.display.flip()  # basically the same as pygame.display.update()
 
-def getFlagCoords():
+def makeMap():
+	pygame.display.set_caption("Will's TD Game -- Map Editor")
+
+	surface.fill(map_grey)
+	# loading temp map background
+	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
+	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
+
+	index = 0
+	for yi in range(18):
+		for xi in range(22):
+			new_Grid = Grid(index, xi, yi)
+			grid_List.append(new_Grid)
+			index = index + 1
+
+	selectedColour = None
+
+	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
+		print "new", selectedColour
+		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
+		click = pygame.mouse.get_pressed()
+
+		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
+		button("(Save)", 200, 50, 100, 50, "Blue")  # not yet implemented
+		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
+
+		TextSurf, TextRect = text_objects("Map drawing:", smallText, white)
+		TextRect.center = (902, 177)
+		surface.blit(TextSurf, TextRect)
+
+		colourButtonSize = 32
+		selectedColour = colourSelect(map_green, 902, 237, colourButtonSize, selectedColour)
+		selectedColour = colourSelect(map_yellow, 902, 297, colourButtonSize, selectedColour)
+		#greyPos = 902, 357  # this function will be a little different
+		print selectedColour
+		if selectedColour != None:
+			colourPainter(grid_List, selectedColour)
+
+		surface.blit(temp_MapImg, map_Coords)
+
+		pathTesting = False  # for now
+
+		for i in grid_List:
+			if pathTesting:
+				if i.colour in (map_yellow, red) and not checkNeighbours(i):
+					i.colour = red
+					print "ERROR: path not connected at point ", i.xi + 1, ", ", i.yi +1
+				elif i.colour in (map_yellow, red) and checkNeighbours(i):
+					i.colour = map_yellow
+			#else:
+			#	i.colour = map_green
+			i.render()
+
+		pass
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame_quit()
+		pygame.display.flip()  # basically the same as pygame.display.update()
+
+def colourSelect(colour, x, y, size, previousColour):
+	global button_State
+	mouse = pygame.mouse.get_pos()
+	click = pygame.mouse.get_pressed()
+
+	pygame.draw.rect(surface, colour, (x, y, size, size))
+	#rect.center = (x, y)
+
+	#if x + (size/2) > mouse[0] > x - (size/2) and y + (size/2) > mouse[1] > y - (size/2):  # if centered
+	if x <= mouse[0] < x + size and y <= mouse[1] < y + size:
+		#highlighted
+		if click[0] == 1:
+			#pressed
+			button_State = 1
+		if button_State == 1 and click[0] == 0:
+			button_State = 0
+			return colour
+	return previousColour
+
+def colourPainter(grid_List, colour):
+	mouse = pygame.mouse.get_pos()
+	click = pygame.mouse.get_pressed()
+	if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
+		print "in grid click"
+		for i in grid_List:
+			if i.x <= mouse[0] < i.x + i.size and i.y <= mouse[1] < i.y + i.size:
+				i.colour = colour
+				print i
+
+def checkNeighbours(i):
+	connections = 0
+	if grid_List[i.number-22].colour in (map_yellow, red):
+		connections = connections + 1
+	if grid_List[i.number+22].colour in (map_yellow, red):
+		connections = connections + 1
+	if grid_List[i.number-1].colour in (map_yellow, red):
+		connections = connections + 1
+	if grid_List[i.number+2].colour in (map_yellow, red):
+		connections = connections + 1
+
+	if connections != 2:
+		return False
+	else:
+		return True
+
+def getFlagCoords(mapName = "Main"):  # again, only if input argument is blank (for now)
 	# "IF mapname = temp_MapIMG: " for example
 	# in later implementations consider json.load(file) to load creep flag coords from txt file
+	# mapFlags = [(15, 8), (15, 3), (6, 3), (6, 10), (13, 10), (13, 16), (5, 16)]  # creates a list of tuples (cant be altered later) - this is only a temp variable
+	mapFlags = None
+
+	with open('MapFlagCoords.txt', 'r') as inputfile:
+	#inputfile = open('MapFlagCoords.txt', 'r')
+		# line = 0
+		print inputfile.readline()
+		for line in inputfile:
+			print 1
+			if "main" in line:
+				print 2
+				mapFlags = line.split('=')[1]
+
+	print "mapFlags: ", mapFlags
+
 	mapFlags = [(15, 8), (15, 3), (6, 3), (6, 10), (13, 10), (13, 16), (5, 16)]  # creates a list of tuples (cant be altered later) - this is only a temp variable
 
 	flagCoords = []
@@ -269,6 +392,7 @@ class Sprite:
 
 	def attacked(self, damage):
 		self.health = self.health - damage
+		print self, " health = ", self.health
 		creepHealthCheck(self)
 
 	def attackCheck(self):
@@ -340,7 +464,6 @@ class Tower:
 				self.attacking = True
 		else:
 			if self.attackFrameCount == self.attackSpeed:
-				surface.blit(self.explosion_Img, (self.targetXInitial, self.targetYInitial))
 				self.target.attacked(self.damage)
 				self.attacking = False
 				self.target, self.targetXInitial, self.targetYInitial = None, None, None
@@ -367,6 +490,28 @@ class Tower:
 
 		if not self.hover:
 			self.cannonBallAttack()
+
+class Grid:
+	def __init__ (self, number, xi, yi):
+		self.number = number
+		#print self.number
+		self.xi = xi  # 0 - 21
+		self.yi = yi  # 0 - 17
+
+		self.size = 36.5
+
+		self.x = (xi * self.size) + map_Coords[0]
+		self.y = (yi * self.size) + map_Coords[1]
+
+
+		self.colour = map_green
+
+	def checkNeighbours():
+		# maybe want to do this in each loop of makeMap
+		print""
+
+	def render(self):
+		pygame.draw.rect(surface, self.colour, (self.x, self.y, self.size, self.size))
 
 
 if __name__ == "__main__":  # https://goo.gl/1CRvRx & https://goo.gl/xF4xOF
