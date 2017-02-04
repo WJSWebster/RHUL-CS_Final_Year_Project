@@ -30,7 +30,7 @@ bright_orange = (255, 165, 0)
 map_green = (70, 147, 65)
 map_yellow = (249, 170, 10)
 map_grey = (135, 135, 135)
-
+path_blue = (0,191,255)
 
 button_State = 0
 
@@ -39,6 +39,7 @@ creep_List = []
 creep_Speed = 1  # temporary - later refer to "bible"
 tower_List = []
 grid_List = []
+#directions = {N: "North", E: "East", S: "South", W: "West"}  # a dictionary of directions to help streamline later processes
 
 heartHealth = 20
 
@@ -211,6 +212,9 @@ def makeMap():
 	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
 
+	grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
+	grid_OverlayImg = pygame.transform.scale(grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
+
 	index = 0
 	for yi in range(18):
 		for xi in range(22):
@@ -221,13 +225,13 @@ def makeMap():
 	selectedColour = None
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
-		print "new", selectedColour
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 		click = pygame.mouse.get_pressed()
 
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
-		button("(Save)", 200, 50, 100, 50, "Blue")  # not yet implemented
-		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
+		button("(Save)", 200, 50, 100, 50, "Blue")  # not yet implemented, grey out until tested
+		button("Test", 400, 50, 100, 50, "Orange", testMap)
+		button("Spawn creep", 550, 50, 150, 50, "Red", addCreep)
 
 		TextSurf, TextRect = text_objects("Map drawing:", smallText, white)
 		TextRect.center = (902, 177)
@@ -237,30 +241,63 @@ def makeMap():
 		selectedColour = colourSelect(map_green, 902, 237, colourButtonSize, selectedColour)
 		selectedColour = colourSelect(map_yellow, 902, 297, colourButtonSize, selectedColour)
 		#greyPos = 902, 357  # this function will be a little different
-		print selectedColour
 		if selectedColour != None:
-			colourPainter(grid_List, selectedColour)
+			colourPainter(selectedColour)
 
-		surface.blit(temp_MapImg, map_Coords)
+		surface.blit(temp_MapImg, map_Coords)  # not really needed, should really remove
 
-		pathTesting = False  # for now
-
-		for i in grid_List:
-			if pathTesting:
-				if i.colour in (map_yellow, red) and not checkNeighbours(i):
-					i.colour = red
-					print "ERROR: path not connected at point ", i.xi + 1, ", ", i.yi +1
-				elif i.colour in (map_yellow, red) and checkNeighbours(i):
-					i.colour = map_yellow
-			#else:
-			#	i.colour = map_green
-			i.render()
+		pathTesting()
+		surface.blit(grid_OverlayImg, map_Coords)
 
 		pass
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
 		pygame.display.flip()  # basically the same as pygame.display.update()
+
+def pathTesting(returnStartPoint = False):  # loops through grid_List and colours each one based on if the checkNeighbours method returns true
+	pathFailure = False
+	for i in grid_List:
+		if i.colour in (map_yellow, red) and checkNeighbours(i) == None:
+			startPoint = i
+		else:
+			if i.colour in (map_yellow, red) and not checkNeighbours(i):
+				i.colour = red
+				pathFailure = True
+				# print "ERROR: path not connected at point ", i.xi + 1, ", ", i.yi +1
+			elif i.colour in (map_yellow, red) and checkNeighbours(i):
+				i.colour = map_yellow
+		i.render()
+	if returnStartPoint and not pathFailure:
+		return startPoint
+	if pathFailure:
+		return False
+	else:
+		return True  # doesnt really need to be in an else condition
+
+def checkNeighbours(i):  # calculates the number of connections for just one grid (called to len(grid_List) number of times)
+	connections = 0
+
+	if i.yi != 0:  # prevents 'list index out of range' error - should replace with a try/catch
+		if grid_List[i.number-22].colour in (map_yellow, red, path_blue):
+			connections = connections + 1
+	if i.yi != 17: # "", also, this is hardcoded and thus wouldnt allow for mapsize change
+		if grid_List[i.number+22].colour in (map_yellow, red, path_blue):
+			connections = connections + 1
+	if i.xi != 0:
+		if grid_List[i.number-1].colour in (map_yellow, red, path_blue):
+			connections = connections + 1
+	if i.xi != 21:
+		if grid_List[i.number+1].colour in (map_yellow, red, path_blue):
+			connections = connections + 1
+
+	if connections < 2:
+		if i.xi == 21 and connections == 1:
+			return None
+		else:
+			return False
+	else:
+		return True  # doesnt really need to be in an else condition
 
 def colourSelect(colour, x, y, size, previousColour):
 	global button_State
@@ -281,31 +318,80 @@ def colourSelect(colour, x, y, size, previousColour):
 			return colour
 	return previousColour
 
-def colourPainter(grid_List, colour):
+def colourPainter(colour):
 	mouse = pygame.mouse.get_pos()
 	click = pygame.mouse.get_pressed()
 	if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
-		print "in grid click"
 		for i in grid_List:
 			if i.x <= mouse[0] < i.x + i.size and i.y <= mouse[1] < i.y + i.size:
 				i.colour = colour
 				print i
 
-def checkNeighbours(i):
-	connections = 0
-	if grid_List[i.number-22].colour in (map_yellow, red):
-		connections = connections + 1
-	if grid_List[i.number+22].colour in (map_yellow, red):
-		connections = connections + 1
-	if grid_List[i.number-1].colour in (map_yellow, red):
-		connections = connections + 1
-	if grid_List[i.number+2].colour in (map_yellow, red):
-		connections = connections + 1
+def testMap():
+	pathComplete = False
+	startPoint = ()  # a tuple
+	# mapRoute = []
+	flagCoords = []  # a list (of tuples)
 
-	if connections != 2:
-		return False
+	if pathTesting():
+		curGrid = pathTesting(True)
+		print "-----------------"
+		print curGrid
+		print "-----------------"
+		#startPoint[0], startPoint[1] = curGrid.xi, curGrid.yi
+		startPoint = (((curGrid.xi), (curGrid.yi)))
+		flagCoords.append(startPoint)
+		previousDirection = "East"
 	else:
-		return True
+		print "ERROR: Path not fully connected"
+		return False
+
+	while not pathComplete:
+		#direction = validDirectionSearch(previousDirection, curGrid)
+		routesFound = 0
+		for i in otherDirections(previousDirection):
+			if i == "North" and curGrid.yi != 0:  # prevents 'list index out of range' error - should replace with a try/catch
+				if grid_List[curGrid.number-22].colour == map_yellow:  # must have two seperate if statements to avoid index range error
+					routesFound = routesFound + 1
+					futureGrid = curGrid.number-22
+					newDirection, previousDirection = i, otherDirections(i)[2]
+			if i == "East" and curGrid.xi != 21:
+				if grid_List[curGrid.number+1].colour == map_yellow:
+					routesFound = routesFound + 1
+					futureGrid = curGrid.number+1
+					newDirection, previousDirection = i, otherDirections(i)[2]
+			if i == "South" and curGrid.yi != 17:
+				if grid_List[curGrid.number+22].colour == map_yellow:
+					routesFound = routesFound + 1
+					futureGrid = curGrid.number+22
+					newDirection, previousDirection = i, otherDirections(i)[2]
+			if i == "West" and curGrid.xi != 0:
+				if grid_List[curGrid.number-1].colour == map_yellow:
+					routesFound = routesFound + 1
+					futureGrid = curGrid.number-1
+					newDirection, previousDirection = i, otherDirections(i)[2]
+		if newDirection != otherDirections(previousDirection)[2]:
+			flagCoords.append(curGrid.xi, curGrid.yi)
+			print "flagCoord DETECTED!"
+		if routesFound > 1:
+			print "multiple routes found... HELP!"
+		curGrid.colour = path_blue
+		curGrid = futureGrid
+
+
+#mdef validDirectionSearch(travelledDirection):
+
+
+def otherDirections(direction):
+	# if you only intend to recieve the opposite direction, opDir == otherDirections(direction)[2]
+	if direction == "North":
+		return "East", "South", "West"
+	if direction == "East":
+		return "South", "West", "Nort"
+	if direction == "South":
+		return "West", "North", "East"
+	if direction == "West":
+		return "North", "East", "South"
 
 def getFlagCoords(mapName = "Main"):  # again, only if input argument is blank (for now)
 	# "IF mapname = temp_MapIMG: " for example
