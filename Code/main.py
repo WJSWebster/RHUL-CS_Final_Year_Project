@@ -34,14 +34,20 @@ path_blue = (0,191,255)
 
 button_State = 0
 
-# these all need to be moved to within game method
+# already within resetGameState()!
+playerHealth = 20
 creep_List = []
-creep_Speed = 1  # temporary - later refer to "bible"
 tower_List = []
 grid_List = []
+tempMapFlagCoords = []
+
+testMapSuccessful = False
+
+creep_Speed = 1  # temporary - later refer to "bible"
+
 #directions = {N: "North", E: "East", S: "South", W: "West"}  # a dictionary of directions to help streamline later processes
 
-heartHealth = 20
+playerHealth = 20
 
 # rendering 'canvas':
 canvas_dimensions = (canvas_width, canvas_height)
@@ -50,10 +56,16 @@ surface = pygame.display.set_mode(canvas_dimensions)
 deltaTime = 0
 getTicksLastTime = 0
 
+def resetGameState():
+	global playerHealth, creep_List, tower_List, grid_List
+	playerHealth = 20
+	creep_List = []
+	tower_List = []
+	grid_List = []
+
 def text_objects(text, font, colour):  # why font?
 	textSurface = font.render(text, True, colour)
 	return textSurface, textSurface.get_rect()
-
 
 def button(msg, x, y, w, h, colour, action=None):  # change variable names
 	global button_State
@@ -73,6 +85,8 @@ def button(msg, x, y, w, h, colour, action=None):  # change variable names
 		if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
 		#event.type == pygame.MOUSEBUTTONUP
 			button_State = 0
+			if action == intro_menu:
+				resetGameState()
 			action()
 
 	else:
@@ -133,10 +147,10 @@ def main():
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
 	# should probs implement a 'try:, except: ' for each image render
 
-	"""
+
 	flagCoords = getFlagCoords()
 	flag_Size = 30
-	# spawning checkpoint flags on mapFlags
+	"""# spawning checkpoint flags on mapFlags
 	checkpointFlag_Img = pygame.image.load("Graphics/checkpointFlag.jpg")
 	checkpointFlag_Img = pygame.transform.scale(checkpointFlag_Img, (flag_Size, flag_Size))
 	"""
@@ -148,17 +162,17 @@ def main():
 		surface.blit(background_Img, (0, 0))
 
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
-		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)
+		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)  # towerCreated legacy code, need to review
 		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
 
 		surface.blit(temp_MapImg, map_Coords)
 
-		if heartHealth <= 0:
+		if playerHealth <= 0:
 			TextSurf, TextRect = text_objects("Game Over", largeText, red)
 			TextRect.center = (canvas_width/2, canvas_height/2)
 			surface.blit(TextSurf, TextRect)
 		else:
-			TextSurf, TextRect = text_objects(("Heart Health: %s" % heartHealth), smallText, white)
+			TextSurf, TextRect = text_objects(("Your Health: %s" % playerHealth), smallText, white)
 			TextRect.center = (150, 600)
 			surface.blit(TextSurf, TextRect)
 
@@ -223,13 +237,17 @@ def makeMap():
 			index = index + 1
 
 	selectedColour = None
+	# testMapSuccessful = False
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 		click = pygame.mouse.get_pressed()
 
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
-		button("(Save)", 200, 50, 100, 50, "Blue")  # not yet implemented, grey out until tested
+		if testMapSuccessful:
+			button("(Save)", 200, 50, 100, 50, "Blue", saveMap)
+		else:
+			button("(Save)", 200, 50, 100, 50, "Red")  # need to replace with "Grey" when we make a grey button se
 		button("Test", 400, 50, 100, 50, "Orange", testMap)
 		button("Spawn creep", 550, 50, 150, 50, "Red", addCreep)
 
@@ -258,7 +276,7 @@ def makeMap():
 def pathTesting(returnStartPoint = False):  # loops through grid_List and colours each one based on if the checkNeighbours method returns true
 	pathFailure = False
 	for i in grid_List:
-		if i.colour in (map_yellow, red) and checkNeighbours(i) == None:
+		if i.colour in (map_yellow, red) and checkNeighbours(i) == "starting point":
 			startPoint = i
 		else:
 			if i.colour in (map_yellow, red) and not checkNeighbours(i):
@@ -292,8 +310,10 @@ def checkNeighbours(i):  # calculates the number of connections for just one gri
 			connections = connections + 1
 
 	if connections < 2:
-		if i.xi == 21 and connections == 1:
-			return None
+		if i.xi == 21  and connections == 1:
+			return "starting point"
+		elif i.xi == 0 and connections == 1:
+			return "ending point"
 		else:
 			return False
 	else:
@@ -325,73 +345,135 @@ def colourPainter(colour):
 		for i in grid_List:
 			if i.x <= mouse[0] < i.x + i.size and i.y <= mouse[1] < i.y + i.size:
 				i.colour = colour
-				print i
+				#print "grid changed: ", i
 
 def testMap():
+	global testMapSuccessful
+	global tempMapFlagCoords
 	pathComplete = False
-	startPoint = ()  # a tuple
+
+	#startPoint = (None, None)  # a tuple
 	# mapRoute = []
-	flagCoords = []  # a list (of tuples)
+	# tempMapFlagCoords = [(None, None)]  # a list (of tuples)
 
 	if pathTesting():
 		curGrid = pathTesting(True)
-		print "-----------------"
-		print curGrid
-		print "-----------------"
-		#startPoint[0], startPoint[1] = curGrid.xi, curGrid.yi
-		startPoint = (((curGrid.xi), (curGrid.yi)))
-		flagCoords.append(startPoint)
-		previousDirection = "East"
+		print "curGrid: ", curGrid.xi, curGrid.yi
+
+		startPoint = [(curGrid.xi, curGrid.yi)]
+		print "startPoint: ", startPoint
+		for j in startPoint:  # encountered a weird bug, only seems to append if startPoint is an iterable
+			tempMapFlagCoords.append(j)
+		backDirection = "East"
 	else:
 		print "ERROR: Path not fully connected"
 		return False
 
+	loop = 0
 	while not pathComplete:
-		#direction = validDirectionSearch(previousDirection, curGrid)
+		#direction = validDirectionSearch(backDirection, curGrid)
+		print "loopNo:", loop
 		routesFound = 0
-		for i in otherDirections(previousDirection):
+		print "curgrid: ", curGrid.xi, curGrid.yi, ":"
+		for i in otherDirections(backDirection):  #assured because we cannot move back on ourselves (no dead ends accepted)
+			print i
 			if i == "North" and curGrid.yi != 0:  # prevents 'list index out of range' error - should replace with a try/catch
 				if grid_List[curGrid.number-22].colour == map_yellow:  # must have two seperate if statements to avoid index range error
 					routesFound = routesFound + 1
-					futureGrid = curGrid.number-22
-					newDirection, previousDirection = i, otherDirections(i)[2]
+					print "we're going %s" % (i)
+					futureGrid = grid_List[curGrid.number-22]
+					headingDirection = i
 			if i == "East" and curGrid.xi != 21:
 				if grid_List[curGrid.number+1].colour == map_yellow:
 					routesFound = routesFound + 1
-					futureGrid = curGrid.number+1
-					newDirection, previousDirection = i, otherDirections(i)[2]
+					print "we're going %s" % (i)
+					futureGrid = grid_List[curGrid.number+1]
+					headingDirection = i
 			if i == "South" and curGrid.yi != 17:
 				if grid_List[curGrid.number+22].colour == map_yellow:
 					routesFound = routesFound + 1
-					futureGrid = curGrid.number+22
-					newDirection, previousDirection = i, otherDirections(i)[2]
+					print "we're going %s" % (i)
+					futureGrid = grid_List[curGrid.number+22]
+					headingDirection = i
 			if i == "West" and curGrid.xi != 0:
 				if grid_List[curGrid.number-1].colour == map_yellow:
 					routesFound = routesFound + 1
-					futureGrid = curGrid.number-1
-					newDirection, previousDirection = i, otherDirections(i)[2]
-		if newDirection != otherDirections(previousDirection)[2]:
-			flagCoords.append(curGrid.xi, curGrid.yi)
-			print "flagCoord DETECTED!"
+					print "we're going %s" % (i)
+					futureGrid = grid_List[curGrid.number-1]
+					headingDirection = i
+
+		if headingDirection != otherDirections(backDirection)[1] or checkNeighbours(curGrid) == "ending point":  # if a right angle is taken
+			backDirection = otherDirections(headingDirection)[1]
+
+			flagPoint = [(curGrid.xi, curGrid.yi)]
+			for j in flagPoint:
+				tempMapFlagCoords.append(j)
+			print "flagCoord DETECTED! at", flagPoint
+			print "headingDirection: ", headingDirection, " - backDirection: ", backDirection
+
+			if checkNeighbours(curGrid) == "ending point":
+				pathComplete = True
+				print "Path Complete"
+				print tempMapFlagCoords
+				testMapSuccessful = True
+				return True
 		if routesFound > 1:
 			print "multiple routes found... HELP!"
+			pathComplete = True
+			return False
+
 		curGrid.colour = path_blue
+		curGrid.render()
+		pygame.display.flip()
+
 		curGrid = futureGrid
 
+		loop = loop + 1
 
-#mdef validDirectionSearch(travelledDirection):
-
+		raw_input("Press Enter to continue...")
 
 def otherDirections(direction):
 	# if you only intend to recieve the opposite direction, opDir == otherDirections(direction)[2]
 	if direction == "North":
 		return "East", "South", "West"
 	if direction == "East":
-		return "South", "West", "Nort"
+		return "South", "West", "North"
 	if direction == "South":
 		return "West", "North", "East"
 	if direction == "West":
 		return "North", "East", "South"
+
+def saveMap():
+	global tempMapFlagCoords
+
+	textFile = open("MapFlagCoords.txt", 'r+')
+	loop = True
+
+	while loop:
+		also = "T"
+		savedMapName = raw_input("Type in the name of this map: ")
+		if len(savedMapName) < 10:
+			if len(savedMapName) <= 0:
+				print "Sorry, that name is too short, please try again.\n"
+			loop = False
+		else:
+			print "Sorry, that name was too long, please try again.\n"
+			also = "Also, t"
+		for line in textFile:
+			if savedMapName in line:
+				print "%shis map name already exists!" % (also)
+				userResponce = raw_input("Would you like to overwrite '%s'? (Y/N)") % (savedMapName)
+				if ('y' or 'Y' or 'yes' or 'Yes') in userResponce:
+					print "Ok, overwriting..."
+					loop = False
+
+	print savedMapName
+	writeline = ("%s=%s\n") % (savedMapName, tempMapFlagCoords)
+	textFile.write(writeline)
+	print "Map '%s' successfully saved!" % (savedMapName)
+
+	tempMapFlagCoords = []
+	textFile.close()
 
 def getFlagCoords(mapName = "Main"):  # again, only if input argument is blank (for now)
 	# "IF mapname = temp_MapIMG: " for example
@@ -409,9 +491,9 @@ def getFlagCoords(mapName = "Main"):  # again, only if input argument is blank (
 				print 2
 				mapFlags = line.split('=')[1]
 
-	print "mapFlags: ", mapFlags
+	# print "mapFlags: ", mapFlags
 
-	mapFlags = [(15, 8), (15, 3), (6, 3), (6, 10), (13, 10), (13, 16), (5, 16)]  # creates a list of tuples (cant be altered later) - this is only a temp variable
+	mapFlags = [(15, 8), (15, 3), (6, 3), (6, 10), (13, 10), (13, 16), (0, 16)]  # creates a list of tuples (cant be altered later) - this is only a temp variable
 
 	flagCoords = []
 	for mx, my in mapFlags:
@@ -482,10 +564,10 @@ class Sprite:
 		creepHealthCheck(self)
 
 	def attackCheck(self):
-		global heartHealth
+		global playerHealth
 		if self.attackFrameCount == self.attackSpeed:
 			# play attack animation - would have to be a loop in of itself
-			heartHealth = heartHealth - self.attackDamage
+			playerHealth = playerHealth - self.attackDamage
 			self.attackFrameCount = 0
 		else:
 			self.attackFrameCount = self.attackFrameCount + 1
