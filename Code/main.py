@@ -476,29 +476,55 @@ def saveMap():
 	textFile.close()
 
 def getFlagCoords(mapName = "Main"):  # again, only if input argument is blank (for now)
-	# "IF mapname = temp_MapIMG: " for example
-	# in later implementations consider json.load(file) to load creep flag coords from txt file
-	# mapFlags = [(15, 8), (15, 3), (6, 3), (6, 10), (13, 10), (13, 16), (5, 16)]  # creates a list of tuples (cant be altered later) - this is only a temp variable
-	mapFlags = None
+	mapFlags = []
+	textFile = open('MapFlagCoords.txt', 'r')
 
-	with open('MapFlagCoords.txt', 'r') as inputfile:
-	#inputfile = open('MapFlagCoords.txt', 'r')
-		# line = 0
-		print inputfile.readline()
-		for line in inputfile:
-			print 1
-			if "main" in line:
-				print 2
-				mapFlags = line.split('=')[1]
+	for line in textFile:
+		if mapName in line:
+			print "Yep, it's here: ", line
 
-	# print "mapFlags: ", mapFlags
+			line = line.split('=[')[1].split(']')[0]
+			#  print "Split line: ", line
 
-	mapFlags = [(15, 8), (15, 3), (6, 3), (6, 10), (13, 10), (13, 16), (0, 16)]  # creates a list of tuples (cant be altered later) - this is only a temp variable
+			print "number of tuples: ", line.count("(")
+			tupleCount = line.count("(")
+
+			line = line.replace('(', ' ').replace('), (', ' ').replace(', ', ' ').replace(')', ' ').split()
+			#  print "circumsised 'list' line: ", line
+
+			for i in range(tupleCount):
+				print "i: ", i
+				print type(line[i])
+				mapFlags.append(((int(line[i])),(int(line[i+1]))))
+				for j in range(1):
+					line.pop(0)
+
+			print "text mapFlags = ", mapFlags
+			break
+		print "No flagCoords could be found under the map name '%s'." % (mapName)
+
+	textFile.close()
 
 	flagCoords = []
 	for mx, my in mapFlags:
 		flagCoords.append(((((mx - 1) * 80 / 2.2) + map_Coords[0]), (((my - 1) * 80 / 2.2) + map_Coords[1])))  # note: this may be problematic if x or y = 1?
 	return flagCoords
+
+def between(value, a, b):
+    # Find and validate before-part.
+    pos_a = value.find(a)
+    if pos_a == -1: return ""
+    # Find and validate after part.
+    pos_b = value.rfind(b)
+    if pos_b == -1: return ""
+    # Return middle part.
+    adjusted_pos_a = pos_a + len(a)
+    if adjusted_pos_a >= pos_b: return ""
+    return value[adjusted_pos_a:pos_b]
+
+def generateMap (flagCoords):
+	global grid_List
+	print "this method is to generate the grid_List when play begins"
 
 def addCreep():
 	new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
