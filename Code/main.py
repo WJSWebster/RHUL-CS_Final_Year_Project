@@ -38,6 +38,7 @@ button_State = 0
 playerHealth = 20
 creep_List = []
 tower_List = []
+mapSelection = ""
 grid_List = []
 tempMapFlagCoords = []
 
@@ -49,9 +50,16 @@ creep_Speed = 1  # temporary - later refer to "bible"
 
 playerHealth = 20
 
-# rendering 'canvas':
+# setting 'canvas':
 canvas_dimensions = (canvas_width, canvas_height)
 surface = pygame.display.set_mode(canvas_dimensions)
+
+# assigning menuBackground:
+menuBackground = pygame.image.load("Graphics/Background/Main_Background.png")
+
+#assigning grid_OverlayImg:
+grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
+grid_OverlayImg = pygame.transform.scale(grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
 
 deltaTime = 0
 getTicksLastTime = 0
@@ -61,14 +69,17 @@ def resetGameState():
 	playerHealth = 20
 	creep_List = []
 	tower_List = []
+	mapSelection = ""
 	grid_List = []
+	generateGridList()
 
 def text_objects(text, font, colour):  # why font?
 	textSurface = font.render(text, True, colour)
 	return textSurface, textSurface.get_rect()
 
-def button(msg, x, y, w, h, colour, action=None):  # change variable names
+def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change variable names
 	global button_State
+	global mapSelection
 	mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 	click = pygame.mouse.get_pressed()   # " "
 
@@ -87,7 +98,13 @@ def button(msg, x, y, w, h, colour, action=None):  # change variable names
 			button_State = 0
 			if action == intro_menu:
 				resetGameState()
-			action()
+			if mapName != None:
+				print "mapName: ", mapName, ", type: ", type(mapName)
+				mapSelection = str(mapName)
+				print "mapSelection: ", mapSelection, ", type: ", type(mapSelection)
+				action()
+			else:
+				action()
 
 	else:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour))
@@ -105,10 +122,7 @@ def intro_menu():
 	pygame_quit = True  # this is a weird debug solution because otherwise 'pygame_quit' is undeclared
 	#  while menu:
 	surface.fill(white)
-
-	menuBackground = pygame.image.load("Graphics/Background/Main_Background.png")  # OG size = '1760 x 1440'
 	surface.blit(menuBackground, (0, 0))
-
 
 	TextSurf, TextRect = text_objects("Game Title", largeText, white)
 	TextRect.center = ((canvas_width / 2), (canvas_height / 3))
@@ -119,7 +133,7 @@ def intro_menu():
 	quitButtonYPos = (beginButtonYPos * 2)
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
-		button("Begin", beginButtonYPos, 450, 100, 50, "Blue", main)
+		button("Begin", beginButtonYPos, 450, 100, 50, "Blue", mapSelect)
 		button("Make Map", makeButtonYPos, 450, 150, 50, "Orange", makeMap)
 		button("Quit", quitButtonYPos, 450, 100, 50, "Red", pygame_quit)
 
@@ -129,24 +143,49 @@ def intro_menu():
 				pygame_quit()
 		pygame.display.flip()  # "Ok Pygame, now do your thang" - basically the same as pygame.display.update()
 
+def mapSelect():
+	pygame.display.set_caption("Will's TD Game -- Map Select")
+
+	mapName = []
+	textFile = open("MapFlagCoords.txt", 'r')
+
+	surface.fill(white)
+
+	for line in textFile:
+		if "=[(" in line:
+			mapName.append(line.split('=[')[0])
+
+	print mapName
+
+	while (True):
+		surface.blit(menuBackground, (0, 0))
+
+		for i in mapName:
+			print i
+			button(i, (canvas_width/2), (70 * (mapName.index(i) + 1)), 150, 50, "Blue", main, i)
+
+		pass
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame_quit()
+		pygame.display.flip()
+	textFile.close()
 
 def main():
 	pygame.display.set_caption("Will's TD Game -- Game")
 
-	# is any of this stuff necessary???
 	# rendering 'canvas':
-	canvas_dimensions = (canvas_width, canvas_height)
-	surface = pygame.display.set_mode(canvas_dimensions)
 	surface.fill(white)
 
 	# rendering background image
 	background_Img = pygame.image.load("Graphics/Background/Game_Background.png")
 
+	"""
 	# loading temp map background
 	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
 	# should probs implement a 'try:, except: ' for each image render
-
+	"""
 
 	flagCoords = getFlagCoords()
 	flag_Size = 30
@@ -159,13 +198,20 @@ def main():
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 		click = pygame.mouse.get_pressed()   # " "
 
+
 		surface.blit(background_Img, (0, 0))
+
+		for i in grid_List:
+			i.render()
+		surface.blit(grid_OverlayImg, map_Coords)
 
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
 		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)  # towerCreated legacy code, need to review
 		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
 
+		"""
 		surface.blit(temp_MapImg, map_Coords)
+		"""
 
 		if playerHealth <= 0:
 			TextSurf, TextRect = text_objects("Game Over", largeText, red)
@@ -222,19 +268,22 @@ def makeMap():
 	pygame.display.set_caption("Will's TD Game -- Map Editor")
 
 	surface.fill(map_grey)
+	"""
 	# loading temp map background
 	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
+	"""
 
-	grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
-	grid_OverlayImg = pygame.transform.scale(grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
-
+	"""
 	index = 0
 	for yi in range(18):
 		for xi in range(22):
 			new_Grid = Grid(index, xi, yi)
 			grid_List.append(new_Grid)
 			index = index + 1
+	"""
+
+	generateGridList()
 
 	selectedColour = None
 	# testMapSuccessful = False
@@ -258,11 +307,13 @@ def makeMap():
 		colourButtonSize = 32
 		selectedColour = colourSelect(map_green, 902, 237, colourButtonSize, selectedColour)
 		selectedColour = colourSelect(map_yellow, 902, 297, colourButtonSize, selectedColour)
-		#greyPos = 902, 357  # this function will be a little different
+
 		if selectedColour != None:
 			colourPainter(selectedColour)
 
+		"""
 		surface.blit(temp_MapImg, map_Coords)  # not really needed, should really remove
+		"""
 
 		pathTesting()
 		surface.blit(grid_OverlayImg, map_Coords)
@@ -272,6 +323,44 @@ def makeMap():
 			if event.type == pygame.QUIT:
 				pygame_quit()
 		pygame.display.flip()  # basically the same as pygame.display.update()
+
+def generateGridList(mapFlags = None):
+	global grid_List
+
+	gridNo = 0
+
+	print mapFlags
+
+	for yi in range(18):
+		for xi in range(22):
+			if mapFlags == None:
+				new_Grid = Grid(gridNo, xi, yi)  # a blank (green slate) for beginning use in map editor
+			else:
+				gridColour = map_green
+				for i in mapFlags:
+					index = mapFlags.index(i)
+					print "xi: %s, yi: %s, i: %s, index: %s" % (xi, yi, i, index)
+
+					if i == (xi, yi):  # could have used "if (xi, yi) in mapflags:" but there is more we need to do with this loop
+						print xi, yi, " in mapFlags"
+						gridColour = map_yellow
+					elif (index < len(mapFlags)-1):  # otherwise, we're at the end of the path (and incrementing 1 more index of mapFlags would be out of range)
+						#print "index %s != map length %s" % (index, len(mapFlags)-1)
+						if xi == i[0] and (yi > 0 and yi < 18):  # to avoid index out of range errors
+							#print "1111111111111111111111111"
+							if (yi > i[1] and yi < mapFlags[index+1][1]) or (yi < i[1] and yi > mapFlags[index+1][1]): #a decision i made that all loops should only and always look forward (to avoid needless double-checking)
+								#print "222222222222222222222"
+								gridColour = map_yellow
+						if yi == i[1] and (xi > 0 and xi < 22):
+							#print "11111111111111111111111111"
+							if (xi > i[0] and xi < mapFlags[index+1][0]) or (xi < i[0] and xi > mapFlags[index+1][0]):
+								#print "2222222222222222222222"
+								gridColour = map_yellow
+					print ""
+				#elif: #if it's along the path to the next flag
+				new_Grid = Grid(gridNo, xi, yi, gridColour)
+			grid_List.append(new_Grid)
+			gridNo = gridNo + 1
 
 def pathTesting(returnStartPoint = False):  # loops through grid_List and colours each one based on if the checkNeighbours method returns true
 	pathFailure = False
@@ -360,7 +449,7 @@ def testMap():
 		curGrid = pathTesting(True)
 		print "curGrid: ", curGrid.xi, curGrid.yi
 
-		startPoint = [(curGrid.xi, curGrid.yi)]
+		startPoint = [(curGrid.xi + 1, curGrid.yi)]
 		print "startPoint: ", startPoint
 		for j in startPoint:  # encountered a weird bug, only seems to append if startPoint is an iterable
 			tempMapFlagCoords.append(j)
@@ -424,6 +513,7 @@ def testMap():
 
 		curGrid.colour = path_blue
 		curGrid.render()
+		surface.blit(grid_OverlayImg, map_Coords)
 		pygame.display.flip()
 
 		curGrid = futureGrid
@@ -452,7 +542,7 @@ def saveMap():
 	while loop:
 		also = "T"
 		savedMapName = raw_input("Type in the name of this map: ")
-		if len(savedMapName) < 10:
+		if len(savedMapName) < 15:
 			if len(savedMapName) <= 0:
 				print "Sorry, that name is too short, please try again.\n"
 			loop = False
@@ -475,44 +565,44 @@ def saveMap():
 	tempMapFlagCoords = []
 	textFile.close()
 
-def getFlagCoords(mapName = "Main"):  # again, only if input argument is blank (for now)
+def getFlagCoords():  # again, only if input argument is blank (for now)
 	mapFlags = []
 	textFile = open('MapFlagCoords.txt', 'r')
 
 	for line in textFile:
-		if mapName in line:
+		print type(mapSelection), mapSelection
+		if mapSelection in line:
 			print "Yep, it's here: ", line
 
 			line = line.split('=[')[1].split(']')[0]
 			#  print "Split line: ", line
 
-			print "number of tuples: ", line.count("(")
 			tupleCount = line.count("(")
+			print "number of tuples: ", tupleCount
 
 			line = line.replace('(', ' ').replace('), (', ' ').replace(', ', ' ').replace(')', ' ').split()
 			#  print "circumsised 'list' line: ", line
 
 			for i in range(tupleCount):
-				print "i: ", i
-				print type(line[i])
-				mapFlags.append(((int(line[i])),(int(line[i+1]))))
+				#  print "i%s type: %s" % (i, type(line[i]))
+				mapFlags.append(((int(line[i])),(int(line[i+1]))))#
 				for j in range(1):
 					line.pop(0)
 
 			print "text mapFlags = ", mapFlags
 			break
-		print "No flagCoords could be found under the map name '%s'." % (mapName)
+		print "No flagCoords could be found under the map name '%s'." % (mapSelection)
 
 	textFile.close()
 
+	generateGridList(mapFlags)
+	print "done generateGridList! ^^^"
+
 	flagCoords = []
 	for mx, my in mapFlags:
-		flagCoords.append(((((mx - 1) * 80 / 2.2) + map_Coords[0]), (((my - 1) * 80 / 2.2) + map_Coords[1])))  # note: this may be problematic if x or y = 1?
+		flagCoords.append(((((mx) * 80 / 2.2) + map_Coords[0]), (((my) * 80 / 2.2) + map_Coords[1])))  # note: this may be problematic if x or y = 1?
+	#  print flagCoords, type(flagCoords), type(flagCoords[0])
 	return flagCoords
-
-def generateMap (flagCoords):
-	global grid_List
-	print "this method is to generate the grid_List when play begins"
 
 def addCreep():
 	new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
@@ -520,8 +610,9 @@ def addCreep():
 
 def creepHealthCheck(creep):
 	if creep.health == 0:
-		creepIndex = creep_List.index(creep)
 		print creep, "Died"
+		# increment current path death count in deathList
+		creepIndex = creep_List.index(creep)
 		creep_List.pop(creepIndex)
 		return True
 	else:
@@ -674,7 +765,7 @@ class Tower:
 			self.cannonBallAttack()
 
 class Grid:
-	def __init__ (self, number, xi, yi):
+	def __init__ (self, number, xi, yi, colour = map_green):
 		self.number = number
 		#print self.number
 		self.xi = xi  # 0 - 21
@@ -686,7 +777,7 @@ class Grid:
 		self.y = (yi * self.size) + map_Coords[1]
 
 
-		self.colour = map_green
+		self.colour = colour
 
 	def checkNeighbours():
 		# maybe want to do this in each loop of makeMap
