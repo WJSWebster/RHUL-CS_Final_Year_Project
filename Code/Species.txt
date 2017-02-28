@@ -1,0 +1,17 @@
+[1] Basic:
+- Health = 20
+- Damage = 2
+- Speed = 2
+- Cost = 5
+
+[2] Tunneller:
+- Health = 10
+- Damage = 1
+- Speed = 3
+- Cost = 20
+
+[3] Brute:
+- Health = 50
+- Damage = 10
+- Speed = 0.5
+- Cost = 50

@@ -9,7 +9,6 @@ canvas_height = 800
 
 map_Size = ((1760 / 2.2), (1440 / 2.2))
 map_Coords = (20, 140)
-map_Entrance = ((map_Size[0] + map_Coords[0]),(((map_Size[1] + map_Coords[1]) / 2) + 12))  # temporary - depends on map type
 
 pygame.init()
 
@@ -36,19 +35,22 @@ button_State = 0
 
 # already within resetGameState()!
 playerHealth = 20
+playerBudget = 0
 creep_List = []
+death_List = []
 tower_List = []
 mapSelection = ""
+waveNo = 1
+frameCounter = 1
+# stars = "" # this is pulled from the player's save text file
+flagCoords = []
+map_Entrance = ()
 grid_List = []
 tempMapFlagCoords = []
 
 testMapSuccessful = False
 
 creep_Speed = 1  # temporary - later refer to "bible"
-
-#directions = {N: "North", E: "East", S: "South", W: "West"}  # a dictionary of directions to help streamline later processes
-
-playerHealth = 20
 
 # setting 'canvas':
 canvas_dimensions = (canvas_width, canvas_height)
@@ -58,6 +60,7 @@ surface = pygame.display.set_mode(canvas_dimensions)
 menuBackground = pygame.image.load("Graphics/Background/Main_Background.png")
 
 #assigning grid_OverlayImg:
+#grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
 grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
 grid_OverlayImg = pygame.transform.scale(grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
 
@@ -65,11 +68,18 @@ deltaTime = 0
 getTicksLastTime = 0
 
 def resetGameState():
-	global playerHealth, creep_List, tower_List, grid_List
+	global playerHealth, creep_List, death_List, tower_List, mapSelection, waveNo, stars, flagCoords, map_Entrance, grid_List
 	playerHealth = 20
+	playerBudget = 0
 	creep_List = []
+	death_List = []
 	tower_List = []
 	mapSelection = ""
+	waveNo = 1
+	frameCounter = 1
+	# stars = ""
+	flagCoords = []
+	map_Entrance = ()
 	grid_List = []
 	generateGridList()
 
@@ -88,26 +98,32 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 		print "mouse position: ", mouse
 	"""
 
-	if x + w > mouse[0] > x and y + h > mouse[1] > y:
-		button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour))
-		if click[0] == 1:
-			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour))
-			button_State = 1
-		if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
-		#event.type == pygame.MOUSEBUTTONUP
-			button_State = 0
-			if action == intro_menu:
-				resetGameState()
-			if mapName != None:
-				print "mapName: ", mapName, ", type: ", type(mapName)
-				mapSelection = str(mapName)
-				print "mapSelection: ", mapSelection, ", type: ", type(mapSelection)
-				action()
-			else:
-				action()
-
+	if msg != "Save" and msg != "Delete": # and msg != "delete"
+		if x + w > mouse[0] > x and y + h > mouse[1] > y:
+			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour))
+			if click[0] == 1:
+				button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour))
+				button_State = 1
+			if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
+			#event.type == pygame.MOUSEBUTTONUP
+				button_State = 0
+				if action == intro_menu:
+					resetGameState()
+				if mapName != None:
+					mapSelection = mapName.split(' ')[0]
+					action()
+				else:
+					action()
+		else:
+			button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour))
 	else:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour))
+		if x + w > mouse[0] > x and y + h > mouse[1] > y:
+			if click[0] == 1:
+				button_State = 1
+			if button_State == 1 and click[0] == 0:
+				button_State = 0
+				action()  # either saveProgress() or deleteProgress()
 
 	button = pygame.transform.scale(button, (w, h))
 	surface.blit(button, (x, y))
@@ -116,6 +132,102 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 	textRect.center = ((x + (w / 2)), (y + (h / 2)))
 	surface.blit(textSurf, textRect)  # need to blit every time rendering a new element
 
+def saveProgress():
+	global mapSelection
+	mapName = ""
+	mapFile = open("MapFlagCoords.txt", 'r')
+	saveFile = open("Save.txt", 'r+')
+
+	# first check that map saves match map_List
+	for mapLine in mapFile:
+		if "=[(" in mapLine:
+			mapName = mapLine.split('=[')[0]
+			for saveLine in saveFile:
+				if ":" in saveLine:
+					if mapName == saveLine.split(':')[0]:
+						print mapName, "breaking"
+						break
+			else:
+				print mapName, "not found in save file -- adding it now!"
+				writeline = ("%s: \n") % (mapName)
+				saveFile.write(writeline)
+	mapFile.close()
+
+	saveFile.seek(0)  # http://stackoverflow.com/questions/3906137/why-cant-i-call-read-twice-on-an-open-file
+	lines = saveFile.read()
+	saveFile.seek(0)
+
+	for i, line in enumerate(saveFile):
+		if ":" in line:
+			if mapSelection == line.split(':')[0]:
+				if i < len(lines):
+					#if ":" in lines[i + 1]:
+					if ":" in next(saveFile):
+						print "there is nothing saved for this mapsave -- writing..."
+						#writeline = ("- playerHealth = %s\n- tower_List = %s\n- waveNo = %s\n") % (playerHealth, tower_List, waveNo)
+						#lines = lines.replace("%s: \n","%s: \n**penis**\n")
+						next_line = next(saveFile)
+						print "next_line = ", next_line
+						saveFile.write('**PENIS**\n')
+           				saveFile.write(next_line)
+						#saveFile.write(lines)
+						#writableLine = i + 1
+						#print "i:", i, ", writableLine:", writableLine
+					"""
+					else:
+						print "overwriting mapsave..."
+					"""
+				else:
+					writeline = ("- playerHealth = %s\n- tower_List = %s\n- waveNo = %s\n") % (playerHealth, tower_List, waveNo)
+					#writableLine = i
+		#print i, "=", writableLine,"?", i == writableLine
+		#if i == writableLine:
+			#print "hello"
+			#saveFile.write(writeline)
+			#saveFile.write("penis")
+
+	if not saveFile.closed:
+		print "file is still open"
+		saveFile.close()
+	#if saveFile.closed:
+	#	print "file is closed"
+	print "end2"
+
+def loadProgress(mapName = mapSelection):
+	if mapName != mapSelection:  #if an argument has been fed into function (ie, when pulling waveNo for buttons)
+		waveSearchOnly = True
+		mapWaveProgress = 0
+	else:  #if loading progress upon entering a map
+		waveSearchOnly = False
+		global playerHealth
+		global towerList
+		global waveNo
+
+	saveFile = open("Save.txt", 'r')
+	searching = False
+
+	for line in saveFile:
+		if ":" in line:
+			if mapName == line.split(':')[0]:
+				searching = True
+		if searching:
+			if waveSearchOnly:
+				if "waveNo" in line:
+					return line.split("= ")[1]
+			else:
+				if "playerHealth" in line:
+					playerHealth = line.split("= ")[1]
+				if "tower_List" in line:
+					towerList = line.split("= ")[1]
+				if "waveNo" in line:
+					waveNo = line.split("= ")[1]
+			if ":" in line:
+				searching = False
+
+	saveFile.close()
+
+def deleteProgress():
+	pass
 
 def intro_menu():
 	pygame.display.set_caption("Will's TD Game -- Menu")
@@ -128,16 +240,19 @@ def intro_menu():
 	TextRect.center = ((canvas_width / 2), (canvas_height / 3))
 	surface.blit(TextSurf, TextRect)
 
-	beginButtonYPos = (canvas_width / 3)
-	makeButtonYPos = (canvas_width / 2)
-	quitButtonYPos = (beginButtonYPos * 2)
+	beginButtonXPos = (canvas_width / 3)
+	makeButtonXPos = (canvas_width / 2)
+	quitButtonXPos = (beginButtonXPos * 2)
+	# saveButtonXPos = (canvas_width - 200)
+	deleteButtonxPos = (canvas_width - 100)
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
-		button("Begin", beginButtonYPos, 450, 100, 50, "Blue", mapSelect)
-		button("Make Map", makeButtonYPos, 450, 150, 50, "Orange", makeMap)
-		button("Quit", quitButtonYPos, 450, 100, 50, "Red", pygame_quit)
+		button("Begin", beginButtonXPos, 450, 100, 50, "Blue", mapSelect)
+		button("Make Map", makeButtonXPos, 450, 150, 50, "Orange", makeMap)
+		button("Quit", quitButtonXPos, 450, 100, 50, "Red", pygame_quit)
+		#button("Save", saveButtonXPos, 50, 60, 60, "FloppyDisk", saveProgress)
+		button("Delete", deleteButtonxPos, 50, 60, 60, "Cross", deleteProgress)
 
-		pass
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
@@ -146,32 +261,38 @@ def intro_menu():
 def mapSelect():
 	pygame.display.set_caption("Will's TD Game -- Map Select")
 
-	mapName = []
+	map_List = []
+	difficulty = ""
 	textFile = open("MapFlagCoords.txt", 'r')
 
 	surface.fill(white)
 
 	for line in textFile:
 		if "=[(" in line:
-			mapName.append(line.split('=[')[0])
+			tupleNo = line.count("(")
+			if tupleNo <= 10:
+				difficulty = "Hard"
+			elif tupleNo <= 20:
+				difficulty = "Medium"
+			else:
+				difficulty = "Easy"
+			#((waveNo/50)*100)
+			map_List.append((line.split('=[')[0] + "  [waveNo%] \n (" + difficulty + ")"))
 
-	print mapName
-
+	textFile.close()
 	while (True):
 		surface.blit(menuBackground, (0, 0))
 
-		for i in mapName:
-			print i
-			button(i, (canvas_width/2), (70 * (mapName.index(i) + 1)), 150, 50, "Blue", main, i)
+		for i in map_List:
+			button(i, (canvas_width/2) - (150 / 2), (70 * (map_List.index(i) + 1)), 150, 50, "Blue", main, i)
 
-		pass
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
 		pygame.display.flip()
-	textFile.close()
 
 def main():
+	global map_Entrance, death_List, waveNo, frameCounter
 	pygame.display.set_caption("Will's TD Game -- Game")
 
 	# rendering 'canvas':
@@ -187,9 +308,23 @@ def main():
 	# should probs implement a 'try:, except: ' for each image render
 	"""
 
+	# getting flagCoords for map
 	flagCoords = getFlagCoords()
+
+	# filling death_List
+	for i in flagCoords:
+		death_List.append([flagCoords.index(i), 0])
+
+	#print "death_List =", death_List
+	map_Entrance = flagCoords[0]
+	#print "map_Entrance = ", map_Entrance
 	flag_Size = 30
-	"""# spawning checkpoint flags on mapFlags
+
+	spawnList = []
+	creepCount = 0
+
+	"""
+	# spawning checkpoint flags on mapFlags
 	checkpointFlag_Img = pygame.image.load("Graphics/checkpointFlag.jpg")
 	checkpointFlag_Img = pygame.transform.scale(checkpointFlag_Img, (flag_Size, flag_Size))
 	"""
@@ -197,7 +332,6 @@ def main():
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 		click = pygame.mouse.get_pressed()   # " "
-
 
 		surface.blit(background_Img, (0, 0))
 
@@ -208,6 +342,7 @@ def main():
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
 		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)  # towerCreated legacy code, need to review
 		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
+		button("Save", (canvas_width - 100), 50, 60, 60, "FloppyDisk", saveProgress)
 
 		"""
 		surface.blit(temp_MapImg, map_Coords)
@@ -217,10 +352,19 @@ def main():
 			TextSurf, TextRect = text_objects("Game Over", largeText, red)
 			TextRect.center = (canvas_width/2, canvas_height/2)
 			surface.blit(TextSurf, TextRect)
+			TextSurf, TextRect = text_objects(("Your Health:\n%s" % playerHealth), smallText, red)
 		else:
-			TextSurf, TextRect = text_objects(("Your Health: %s" % playerHealth), smallText, white)
-			TextRect.center = (150, 600)
-			surface.blit(TextSurf, TextRect)
+			TextSurf, TextRect = text_objects(("Your Health:\n%s" % playerHealth), smallText, white)
+		TextRect.center = ((canvas_width - 300), 50)
+		surface.blit(TextSurf, TextRect)
+
+		TextSurf, TextRect = text_objects(("Wave:\n%s" % waveNo), smallText, white)
+		TextRect.center = ((canvas_width - 150), 50)
+		surface.blit(TextSurf, TextRect)
+
+		TextSurf, TextRect = text_objects(("Creeps left:\n%s/%s" % ((len(spawnList) + len(creep_List)), creepCount)), smallText, white)
+		TextRect.center = ((canvas_width - 50), 150)
+		surface.blit(TextSurf, TextRect)
 
 		"""
 		# DEBUG
@@ -229,6 +373,19 @@ def main():
 			mapFlag_CoordX, mapFlag_CoordY = i
 			surface.blit(checkpointFlag_Img, ((mapFlag_CoordX), (mapFlag_CoordY)))
 		"""
+		########################
+		#####   Gameplay   #####
+		########################
+
+		# print "frameCounter = ", frameCounter
+
+		if frameCounter == 1:
+			spawnRate, creepCount, spawnList = getWaveInfo(waveNo)
+
+		if frameCounter / spawnRate:
+			if len(spawnList) > 0:
+				addCreep(spawnList[0])
+				spawnList.pop(0)
 
 		for i in tower_List:
 			if i.hover:
@@ -246,6 +403,10 @@ def main():
 					i.attackCheck()
 				i.render()
 
+		if len(creep_List) == 0:
+			waveNo = waveNo + 1
+			frameCounter = 0
+
 		"""
 		# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
 		global deltaTime
@@ -258,7 +419,8 @@ def main():
 		print deltaTime
 		"""
 
-		pass
+		frameCounter = frameCounter + 1
+
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
@@ -295,10 +457,12 @@ def makeMap():
 		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
 		if testMapSuccessful:
 			button("(Save)", 200, 50, 100, 50, "Blue", saveMap)
+			# button("Spawn creep", 550, 50, 150, 50, "Red", addCreep)
 		else:
-			button("(Save)", 200, 50, 100, 50, "Red")  # need to replace with "Grey" when we make a grey button se
+			button("(Save)", 200, 50, 100, 50, "Grey")
+		button("Spawn creep", 550, 50, 150, 50, "Grey")  #not yet implemented
 		button("Test", 400, 50, 100, 50, "Orange", testMap)
-		button("Spawn creep", 550, 50, 150, 50, "Red", addCreep)
+
 
 		TextSurf, TextRect = text_objects("Map drawing:", smallText, white)
 		TextRect.center = (902, 177)
@@ -318,7 +482,6 @@ def makeMap():
 		pathTesting()
 		surface.blit(grid_OverlayImg, map_Coords)
 
-		pass
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
@@ -339,24 +502,18 @@ def generateGridList(mapFlags = None):
 				gridColour = map_green
 				for i in mapFlags:
 					index = mapFlags.index(i)
-					print "xi: %s, yi: %s, i: %s, index: %s" % (xi, yi, i, index)
-
+					# print "xi: %s, yi: %s, i: %s, index: %s" % (xi, yi, i, index)
 					if i == (xi, yi):  # could have used "if (xi, yi) in mapflags:" but there is more we need to do with this loop
-						print xi, yi, " in mapFlags"
+						# print xi, yi, " in mapFlags"
 						gridColour = map_yellow
 					elif (index < len(mapFlags)-1):  # otherwise, we're at the end of the path (and incrementing 1 more index of mapFlags would be out of range)
 						#print "index %s != map length %s" % (index, len(mapFlags)-1)
 						if xi == i[0] and (yi > 0 and yi < 18):  # to avoid index out of range errors
-							#print "1111111111111111111111111"
 							if (yi > i[1] and yi < mapFlags[index+1][1]) or (yi < i[1] and yi > mapFlags[index+1][1]): #a decision i made that all loops should only and always look forward (to avoid needless double-checking)
-								#print "222222222222222222222"
 								gridColour = map_yellow
 						if yi == i[1] and (xi > 0 and xi < 22):
-							#print "11111111111111111111111111"
 							if (xi > i[0] and xi < mapFlags[index+1][0]) or (xi < i[0] and xi > mapFlags[index+1][0]):
-								#print "2222222222222222222222"
 								gridColour = map_yellow
-					print ""
 				#elif: #if it's along the path to the next flag
 				new_Grid = Grid(gridNo, xi, yi, gridColour)
 			grid_List.append(new_Grid)
@@ -520,7 +677,7 @@ def testMap():
 
 		loop = loop + 1
 
-		raw_input("Press Enter to continue...")
+		#raw_input("Press Enter to continue...")  #debug, no longer required
 
 def otherDirections(direction):
 	# if you only intend to recieve the opposite direction, opDir == otherDirections(direction)[2]
@@ -570,7 +727,6 @@ def getFlagCoords():  # again, only if input argument is blank (for now)
 	textFile = open('MapFlagCoords.txt', 'r')
 
 	for line in textFile:
-		print type(mapSelection), mapSelection
 		if mapSelection in line:
 			print "Yep, it's here: ", line
 
@@ -589,7 +745,7 @@ def getFlagCoords():  # again, only if input argument is blank (for now)
 				for j in range(1):
 					line.pop(0)
 
-			print "text mapFlags = ", mapFlags
+			# print "text mapFlags = ", mapFlags
 			break
 		print "No flagCoords could be found under the map name '%s'." % (mapSelection)
 
@@ -598,20 +754,59 @@ def getFlagCoords():  # again, only if input argument is blank (for now)
 	generateGridList(mapFlags)
 	print "done generateGridList! ^^^"
 
-	flagCoords = []
+	# flagCoords = []
 	for mx, my in mapFlags:
 		flagCoords.append(((((mx) * 80 / 2.2) + map_Coords[0]), (((my) * 80 / 2.2) + map_Coords[1])))  # note: this may be problematic if x or y = 1?
 	#  print flagCoords, type(flagCoords), type(flagCoords[0])
 	return flagCoords
 
-def addCreep():
-	new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
+def getWaveInfo(waveNo):
+	spawnList = []
+	# reading in Wave Setup.txt
+	waveFile = open("Wave Setup.txt", 'r')
+	for line in waveFile:
+		if ("%s) " % (waveNo)) in line:
+			spawnRate = int(line.split('{')[1].split('}')[0])
+			print "spawnRate = ", spawnRate
+
+			creepCount = line.count(', ') + 1
+			print "creepCount = ", creepCount
+
+			line = line.split('[')[1].replace(', ',' ').split(']')[0]
+			print "line = ", line
+			for i in range(creepCount):
+				spawnList.append(int(line[i]))
+			break
+
+	print "spawnList = ", spawnList
+	waveFile.close()
+	return spawnRate, creepCount, spawnList
+
+def addCreep(creepVariant = None):
+	global map_Entrance
+
+	if creepVariant != None:
+		pass # in future, search through text file and read in creep's statement
+	if map_Entrance != []:
+		new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
+	elif creepVariant != None:
+		print "ERROR: no map_Entrance defined!"
+		new_Creep = Sprite((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))  # temporary - depends on map type
+	else:
+		new_Creep = Sprite((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12), creepVariant)
 	creep_List.append(new_Creep)
 
 def creepHealthCheck(creep):
+	global death_List, playerBudget
+
 	if creep.health == 0:
 		print creep, "Died"
-		# increment current path death count in deathList
+		# increment current path death count in death_List
+		playerBudget = playerBudget + creep.cost
+		for i in death_List:
+			if i[0] == creep.flagNo:
+				i[1] = i[1] + 1
+		print "death_List = ", death_List
 		creepIndex = creep_List.index(creep)
 		creep_List.pop(creepIndex)
 		return True
@@ -620,7 +815,7 @@ def creepHealthCheck(creep):
 
 
 class Sprite:
-	def __init__(self, x, y):
+	def __init__(self, x, y, speciesNo = 1):
 		self.x = int(x)
 		self.y = int(y)
 
@@ -630,11 +825,36 @@ class Sprite:
 		self.flagNo = 0
 		self.pathComplete = False
 
-		self.health = 10  # this is the default for the example sprite atm
+		self.species, self.health, self.attackDamage, self.speed, self.cost = self.getSpecies(speciesNo)
+		#need to move 'creep_speed = 1' here
 
 		self.attackDamage = 2 # again, a default stat for now...
 		self.attackFrameCount = 0
 		self.attackSpeed = 30  # the number of frames before creep can attack again
+
+	def getSpecies(self, speciesNo):
+		speciesFile = open("Species.txt", 'r')
+
+		parsing = False
+
+		for line in speciesFile:
+			if ("[%s]") % (speciesNo) in line:
+				species = line.split("] ")[1].split(":")[0]
+				parsing = True
+			elif parsing and "Health =" in line:
+				health = line.split(" = ")[1]
+			elif parsing and "Damage" in line:
+				damage = line.split(" = ")[1]
+			elif parsing and "Speed" in line:
+				speed = line.split(" = ")[1]
+			elif parsing and "Cost" in line:
+				cost = line.split(" = ")[1]
+			elif "[" in line:
+				parsing = False
+				break
+
+		speciesFile.close()
+		return (species, int(health), int(damage), int(speed), int(cost))
 
 	def creepPathFollow(self, flagCoords):
 		if self.flagNo == len(flagCoords):
@@ -678,7 +898,7 @@ class Sprite:
 			self.attackFrameCount = self.attackFrameCount + 1
 
 	def render(self):
-		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_%s.png" % (self.direction))
+		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction))
 		creep_Img = pygame.transform.scale(creep_Img, (self.size, self.size))
 		surface.blit(creep_Img, (self.x, self.y))
 		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))
@@ -765,9 +985,9 @@ class Tower:
 			self.cannonBallAttack()
 
 class Grid:
-	def __init__ (self, number, xi, yi, colour = map_green):
+	def __init__ (self, number, xi, yi, colour = map_green, direction = None):
 		self.number = number
-		#print self.number
+
 		self.xi = xi  # 0 - 21
 		self.yi = yi  # 0 - 17
 
@@ -776,12 +996,13 @@ class Grid:
 		self.x = (xi * self.size) + map_Coords[0]
 		self.y = (yi * self.size) + map_Coords[1]
 
+		#self.direction = direction
 
 		self.colour = colour
 
 	def checkNeighbours():
 		# maybe want to do this in each loop of makeMap
-		print""
+		pass
 
 	def render(self):
 		pygame.draw.rect(surface, self.colour, (self.x, self.y, self.size, self.size))
