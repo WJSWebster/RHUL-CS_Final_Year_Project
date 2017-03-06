@@ -1,4 +1,4 @@
-#from Sprite import *  # cannot render because makes calls to 'surface'
+#from Creep import *  # cannot render because makes calls to 'surface'
 #from Tower import *
 #import __ini__
 import pygame, math, random, sys
@@ -39,6 +39,7 @@ playerBudget = 0
 creep_List = []
 death_List = []
 tower_List = []
+entitySelected = None
 mapSelection = ""
 waveNo = 1
 frameCounter = 1
@@ -61,7 +62,7 @@ menuBackground = pygame.image.load("Graphics/Background/Main_Background.png")
 
 #assigning grid_OverlayImg:
 #grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
-grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
+grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay.png")
 grid_OverlayImg = pygame.transform.scale(grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
 
 deltaTime = 0
@@ -83,7 +84,23 @@ def resetGameState():
 	grid_List = []
 	generateGridList()
 
-def text_objects(text, font, colour):  # why font?
+def displayText(text, font, colour, centX, centY):
+	if "\n" in text:
+		halfFontSize = font.get_linesize() / 2
+		TextSurf, TextRect = text_objects(text.split('\n')[0], font, colour)
+		TextRect.center = (centX, centY - halfFontSize)
+		surface.blit(TextSurf, TextRect)
+
+		TextSurf, TextRect = text_objects(text.split('\n')[1], font, colour)
+		TextRect.center = (centX, centY + halfFontSize)
+		surface.blit(TextSurf, TextRect)
+
+	else:
+		TextSurf, TextRect = text_objects(text, font, colour)
+		TextRect.center = (centX, centY)
+		surface.blit(TextSurf, TextRect)
+
+def text_objects(text, font, colour):
 	textSurface = font.render(text, True, colour)
 	return textSurface, textSurface.get_rect()
 
@@ -128,9 +145,7 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 	button = pygame.transform.scale(button, (w, h))
 	surface.blit(button, (x, y))
 
-	textSurf, textRect = text_objects(msg, smallText, white)
-	textRect.center = ((x + (w / 2)), (y + (h / 2)))
-	surface.blit(textSurf, textRect)  # need to blit every time rendering a new element
+	displayText(msg, smallText, white, (x + (w / 2)), (y + (h / 2)))
 
 def saveProgress():
 	global mapSelection
@@ -165,7 +180,7 @@ def saveProgress():
 					if ":" in next(saveFile):
 						print "there is nothing saved for this mapsave -- writing..."
 						#writeline = ("- playerHealth = %s\n- tower_List = %s\n- waveNo = %s\n") % (playerHealth, tower_List, waveNo)
-						#lines = lines.replace("%s: \n","%s: \n**penis**\n")
+						#lines = lines.replace("%s: \n","%s: \n**test**\n")
 						next_line = next(saveFile)
 						print "next_line = ", next_line
 						saveFile.write('**PENIS**\n')
@@ -236,12 +251,10 @@ def intro_menu():
 	surface.fill(white)
 	surface.blit(menuBackground, (0, 0))
 
-	TextSurf, TextRect = text_objects("Game Title", largeText, white)
-	TextRect.center = ((canvas_width / 2), (canvas_height / 3))
-	surface.blit(TextSurf, TextRect)
+	displayText("Game Title", largeText, white, (canvas_width / 2), (canvas_height / 3))
 
 	beginButtonXPos = (canvas_width / 3)
-	makeButtonXPos = (canvas_width / 2)
+	makeButtonXPos = (canvas_width / 2) - 22
 	quitButtonXPos = (beginButtonXPos * 2)
 	# saveButtonXPos = (canvas_width - 200)
 	deleteButtonxPos = (canvas_width - 100)
@@ -277,7 +290,7 @@ def mapSelect():
 			else:
 				difficulty = "Easy"
 			#((waveNo/50)*100)
-			map_List.append((line.split('=[')[0] + "  [waveNo%] \n (" + difficulty + ")"))
+			map_List.append(line.split('=[')[0] + ("  [%s]\n(%s)" % (str(waveNo), str(difficulty))))
 
 	textFile.close()
 	while (True):
@@ -339,32 +352,24 @@ def main():
 			i.render()
 		surface.blit(grid_OverlayImg, map_Coords)
 
-		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
+		if playerHealth <= 0:
+			healthColour = red
+		else:
+			healthColour = white
+
 		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)  # towerCreated legacy code, need to review
 		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
-		button("Save", (canvas_width - 100), 50, 60, 60, "FloppyDisk", saveProgress)
+		button("Save", (canvas_width - 120), 50, 60, 60, "FloppyDisk", saveProgress)
 
-		"""
-		surface.blit(temp_MapImg, map_Coords)
-		"""
+		displayText("Your Health:\n%s" % (playerHealth), smallText, healthColour, (canvas_width - 320), 35)
+		displayText("Creeps left:\n%s/%s" % ((len(spawnList) + len(creep_List)), creepCount), smallText, white, (canvas_width - 320), 90)
+
+		displayText("Wave:\n%s" % (waveNo), smallText, white, (canvas_width - 220), 60)
 
 		if playerHealth <= 0:
-			TextSurf, TextRect = text_objects("Game Over", largeText, red)
-			TextRect.center = (canvas_width/2, canvas_height/2)
-			surface.blit(TextSurf, TextRect)
-			TextSurf, TextRect = text_objects(("Your Health:\n%s" % playerHealth), smallText, red)
-		else:
-			TextSurf, TextRect = text_objects(("Your Health:\n%s" % playerHealth), smallText, white)
-		TextRect.center = ((canvas_width - 300), 50)
-		surface.blit(TextSurf, TextRect)
-
-		TextSurf, TextRect = text_objects(("Wave:\n%s" % waveNo), smallText, white)
-		TextRect.center = ((canvas_width - 150), 50)
-		surface.blit(TextSurf, TextRect)
-
-		TextSurf, TextRect = text_objects(("Creeps left:\n%s/%s" % ((len(spawnList) + len(creep_List)), creepCount)), smallText, white)
-		TextRect.center = ((canvas_width - 50), 150)
-		surface.blit(TextSurf, TextRect)
+			pygame.draw.rect(surface, white, (0, 0, canvas_width, canvas_height))
+			displayText("Game Over", largeText, red, canvas_width/2, canvas_height/2)
+		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
 
 		"""
 		# DEBUG
@@ -376,55 +381,119 @@ def main():
 		########################
 		#####   Gameplay   #####
 		########################
-
+		if playerHealth > 0:
 		# print "frameCounter = ", frameCounter
 
-		if frameCounter == 1:
-			spawnRate, creepCount, spawnList = getWaveInfo(waveNo)
+			if frameCounter == 1:
+				spawnRate, creepCount, spawnList = getWaveInfo(waveNo)
 
-		if frameCounter / spawnRate:
-			if len(spawnList) > 0:
-				addCreep(spawnList[0])
-				spawnList.pop(0)
+			if frameCounter / spawnRate:
+				if len(spawnList) > 0:
+					addCreep(spawnList[0])
+					spawnList.pop(0)
 
-		for i in tower_List:
-			if i.hover:
-				i.x, i.y = mouse
-				if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
-					i.hover = False
-					pygame.mouse.set_visible(True)
-			i.render()
-
-		for i in creep_List:
-			if not creepHealthCheck(i):
-				if not i.pathComplete:
-					i.creepPathFollow(flagCoords)
+			for i in tower_List:
+				if i.hover:
+					i.x, i.y = mouse
+					if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
+						i.hover = False
+						pygame.mouse.set_visible(True)
 				else:
-					i.attackCheck()
+					checkSelected(mouse, click, i)
 				i.render()
 
-		if len(creep_List) == 0:
-			waveNo = waveNo + 1
-			frameCounter = 0
+			for i in creep_List:
+				if not creepHealthCheck(i):
+					if not i.pathComplete:
+						i.creepPathFollow(flagCoords)
+						checkSelected(mouse, click, i)
+					else:
+						i.attackCheck()
+					i.render()
 
-		"""
-		# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
-		global deltaTime
-		global getTicksLastFrame
+			if len(creep_List) == 0:
+				waveNo = waveNo + 1
+				frameCounter = 0
 
-		t = pygame.time.get_ticks()
-		# deltaTime in seconds.
-		getTicksLastFrame = t
-		deltaTime = (t - getTicksLastFrame) / 1000.0
-		print deltaTime
-		"""
+			if waveNo != 1:  # error checking
+				print "waveNo =", waveNo
+				print "frameCounter =", frameCounter
 
-		frameCounter = frameCounter + 1
+			"""
+			# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
+			global deltaTime
+			global getTicksLastFrame
+
+			t = pygame.time.get_ticks()
+			# deltaTime in seconds.
+			getTicksLastFrame = t
+			deltaTime = (t - getTicksLastFrame) / 1000.0
+			print deltaTime
+			"""
+
+			frameCounter = frameCounter + 1
 
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
 		pygame.display.flip()  # basically the same as pygame.display.update()
+
+def checkSelected(mouse, click, curEntity):
+	global button_State, entitySelected
+	dataXCoord = canvas_width - 90
+	dataYCoord = 175  # initially, then incremented upon on future lines of data
+	statsBackground = pygame.image.load("Graphics/Sprites/Buttons/Grey.png")
+	#statsBackground = pygame.image.load("Graphics/Sprites/Buttons/Orange_pressed.png")
+	lineSize = smallText.get_linesize()
+	lineIncrement = 1
+	gridSize = 36.5
+
+	if curEntity.x <= mouse[0] <= curEntity.x + curEntity.size and curEntity.y <= mouse[1] <= curEntity.y + curEntity.size: #and click[0] == 1:
+		#highlighted
+		if click[0] == 1:
+			#pressed
+			button_State = 1
+		if click[0] == 0 and button_State == 1:
+			button_State = 0
+			if curEntity == entitySelected:
+				entitySelected = None  # deselects entity
+			else:
+				entitySelected = curEntity
+	if entitySelected == curEntity:
+		if curEntity.__class__.__name__ == "Creep":  # if the object is a Creep class instance
+			statsBackground = pygame.transform.scale(statsBackground, (150, 300))
+			surface.blit(statsBackground, (dataXCoord - 75, dataYCoord - 40))
+
+			displayText("Creep %s of %s:\n" % ((creep_List.index(curEntity) + 1), len(creep_List)), smallText, white, dataXCoord, dataYCoord + (lineSize * lineIncrement))
+			lineIncrement = lineIncrement + 1
+
+			#Grid.render(dataXCoord - (curEntity.size / 2), lineSize * lineIncrement, map_yellow)
+			pygame.draw.rect(surface, map_yellow, (dataXCoord - (curEntity.size / 2), dataYCoord + (lineSize * lineIncrement), gridSize, gridSize))  #dataXCoord - (curEntity.size / 2)
+			curEntity.render(dataXCoord - (curEntity.size / 2), dataYCoord + (lineSize * lineIncrement))
+			lineIncrement = lineIncrement + 4
+
+			attributeTuple = ('species', 'health', 'damage', 'speed', 'cost')
+		else:  # object type == Tower
+			statsBackground = pygame.transform.scale(statsBackground, (150, 280))
+			surface.blit(statsBackground, (dataXCoord - 75, dataYCoord - 40))
+
+			displayText("Tower %s of %s:\n" % ((tower_List.index(curEntity) + 1), len(tower_List)), smallText, white, dataXCoord, dataYCoord + (lineSize * lineIncrement))
+			lineIncrement = lineIncrement + 1
+
+			#Grid.render(dataXCoord - (curEntity.size / 2), lineSize * lineIncrement, map_greenw)
+			pygame.draw.rect(surface, map_green, (dataXCoord - (curEntity.size / 2), dataYCoord + (lineSize * lineIncrement), gridSize, gridSize))
+			curEntity.render(dataXCoord - (curEntity.size / 2), dataYCoord + (lineSize * lineIncrement))
+			lineIncrement = lineIncrement + 4
+
+			attributeTuple = ('type', 'damage', 'attackSpeed','target')
+
+		for i in attributeTuple:
+			for attr, value in curEntity.__dict__.iteritems():
+				if i == attr:
+					displayText("%s: %s\n" % (i.title(), value), smallText, white, dataXCoord, dataYCoord + (lineSize * lineIncrement))
+					lineIncrement = lineIncrement + 1
+					break
+
 
 def makeMap():
 	pygame.display.set_caption("Will's TD Game -- Map Editor")
@@ -463,10 +532,7 @@ def makeMap():
 		button("Spawn creep", 550, 50, 150, 50, "Grey")  #not yet implemented
 		button("Test", 400, 50, 100, 50, "Orange", testMap)
 
-
-		TextSurf, TextRect = text_objects("Map drawing:", smallText, white)
-		TextRect.center = (902, 177)
-		surface.blit(TextSurf, TextRect)
+		displayText("Map drawing:", smallText, white, 902, 177)
 
 		colourButtonSize = 32
 		selectedColour = colourSelect(map_green, 902, 237, colourButtonSize, selectedColour)
@@ -574,7 +640,7 @@ def colourSelect(colour, x, y, size, previousColour):
 	#rect.center = (x, y)
 
 	#if x + (size/2) > mouse[0] > x - (size/2) and y + (size/2) > mouse[1] > y - (size/2):  # if centered
-	if x <= mouse[0] < x + size and y <= mouse[1] < y + size:
+	if x <= mouse[0] <= x + size and y <= mouse[1] <= y + size:
 		#highlighted
 		if click[0] == 1:
 			#pressed
@@ -788,12 +854,12 @@ def addCreep(creepVariant = None):
 	if creepVariant != None:
 		pass # in future, search through text file and read in creep's statement
 	if map_Entrance != []:
-		new_Creep = Sprite(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
+		new_Creep = Creep(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
 	elif creepVariant != None:
 		print "ERROR: no map_Entrance defined!"
-		new_Creep = Sprite((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))  # temporary - depends on map type
+		new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))  # temporary - depends on map type
 	else:
-		new_Creep = Sprite((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12), creepVariant)
+		new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12), creepVariant)
 	creep_List.append(new_Creep)
 
 def creepHealthCheck(creep):
@@ -814,7 +880,7 @@ def creepHealthCheck(creep):
 		return False
 
 
-class Sprite:
+class Creep:
 	def __init__(self, x, y, speciesNo = 1):
 		self.x = int(x)
 		self.y = int(y)
@@ -825,10 +891,10 @@ class Sprite:
 		self.flagNo = 0
 		self.pathComplete = False
 
-		self.species, self.health, self.attackDamage, self.speed, self.cost = self.getSpecies(speciesNo)
+		self.species, self.health, self.damage, self.speed, self.cost = self.getSpecies(speciesNo)
 		#need to move 'creep_speed = 1' here
 
-		self.attackDamage = 2 # again, a default stat for now...
+		#self.attackDamage = 2 # again, a default stat for now...
 		self.attackFrameCount = 0
 		self.attackSpeed = 30  # the number of frames before creep can attack again
 
@@ -892,15 +958,18 @@ class Sprite:
 		global playerHealth
 		if self.attackFrameCount == self.attackSpeed:
 			# play attack animation - would have to be a loop in of itself
-			playerHealth = playerHealth - self.attackDamage
+			playerHealth = playerHealth - self.damageamage
 			self.attackFrameCount = 0
 		else:
 			self.attackFrameCount = self.attackFrameCount + 1
 
-	def render(self):
+	def render(self, xCoord = None, yCoord = None): #, xRendCoord = self.x, yRendCoord = self.y
 		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction))
 		creep_Img = pygame.transform.scale(creep_Img, (self.size, self.size))
-		surface.blit(creep_Img, (self.x, self.y))
+		if xCoord == None and yCoord == None:
+			surface.blit(creep_Img, (self.x, self.y))
+		else:
+			surface.blit(creep_Img, (xCoord, yCoord))
 		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))
 
 def placeTower():
@@ -909,6 +978,7 @@ def placeTower():
 
 class Tower:
 	def __init__(self, x, y, hover):
+		self.type = "Basic"  # for now, will be read in from text file
 		self.x = x
 		self.y = y
 
@@ -965,24 +1035,27 @@ class Tower:
 				self.attackFrameCount = self.attackFrameCount + 1
 				surface.blit(self.shadow_Img, (self.targetXInitial, self.targetYInitial))
 
-	def render(self):
+	def render(self, xCoord = None, yCoord = None):
 		if self.hover:
 			# background = pygame.Display.set_mode()
 			tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_Transparent.png")
 			pygame.mouse.set_visible(False)
 			#  pygame.mouse.set_cursor  # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
 		else:
-			self.cannonBallAttack()
+			#self.cannonBallAttack()
 			if self.direction == "None":
 				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01.png")
 			else:
 				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction))
 
 		tower_Img = pygame.transform.scale(tower_Img, (self.size, self.size))
-		surface.blit(tower_Img, (self.x, self.y))
+		if xCoord == None and yCoord == None:
+			surface.blit(tower_Img, (self.x, self.y))
+			if not self.hover:
+				self.cannonBallAttack()
+		else:
+			surface.blit(tower_Img, (xCoord, yCoord))
 
-		if not self.hover:
-			self.cannonBallAttack()
 
 class Grid:
 	def __init__ (self, number, xi, yi, colour = map_green, direction = None):
@@ -1004,7 +1077,7 @@ class Grid:
 		# maybe want to do this in each loop of makeMap
 		pass
 
-	def render(self):
+	def render(self): #, x = self.x, y = self.y, colour = self.colour
 		pygame.draw.rect(surface, self.colour, (self.x, self.y, self.size, self.size))
 
 
