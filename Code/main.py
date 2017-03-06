@@ -417,9 +417,11 @@ def main():
 				waveNo = waveNo + 1
 				frameCounter = 0
 
+			"""
 			if waveNo != 1:  # error checking
 				print "waveNo =", waveNo
 				print "frameCounter =", frameCounter
+			"""
 
 			"""
 			# trying to implemenet a delta time such that game loops consistently with frame rate (https://goo.gl/Pfmrx5)
@@ -444,7 +446,7 @@ def checkSelected(mouse, click, curEntity):
 	global button_State, entitySelected
 	dataXCoord = canvas_width - 90
 	dataYCoord = 175  # initially, then incremented upon on future lines of data
-	statsBackground = pygame.image.load("Graphics/Sprites/Buttons/Grey.png")
+	statsBackground = pygame.image.load("Graphics/Background/Stats_Background.png")
 	#statsBackground = pygame.image.load("Graphics/Sprites/Buttons/Orange_pressed.png")
 	lineSize = smallText.get_linesize()
 	lineIncrement = 1
@@ -989,7 +991,7 @@ class Creep:
 
 		playerHealth = playerHealth - self.damage
 
-		creepIndex = creep_List.index(creep)
+		creepIndex = creep_List.index(self)
 		creep_List.pop(creepIndex)
 
 	def render(self, xCoord = None, yCoord = None): #, xRendCoord = self.x, yRendCoord = self.y
