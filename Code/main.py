@@ -183,7 +183,7 @@ def saveProgress():
 						#lines = lines.replace("%s: \n","%s: \n**test**\n")
 						next_line = next(saveFile)
 						print "next_line = ", next_line
-						saveFile.write('**PENIS**\n')
+						saveFile.write('**TEST**\n')
            				saveFile.write(next_line)
 						#saveFile.write(lines)
 						#writableLine = i + 1
@@ -199,7 +199,7 @@ def saveProgress():
 		#if i == writableLine:
 			#print "hello"
 			#saveFile.write(writeline)
-			#saveFile.write("penis")
+			#saveFile.write("test")
 
 	if not saveFile.closed:
 		print "file is still open"
@@ -387,7 +387,7 @@ def main():
 			if frameCounter == 1:
 				spawnRate, creepCount, spawnList = getWaveInfo(waveNo)
 
-			if frameCounter / spawnRate:
+			if frameCounter % spawnRate == 0:  # spawns a new creep from spawnList in accordance with spawnRate for that wave
 				if len(spawnList) > 0:
 					addCreep(spawnList[0])
 					spawnList.pop(0)
@@ -407,11 +407,13 @@ def main():
 					if not i.pathComplete:
 						i.creepPathFollow(flagCoords)
 						checkSelected(mouse, click, i)
+						i.render()
 					else:
-						i.attackCheck()
-					i.render()
+						i.attackPlayer()
 
-			if len(creep_List) == 0:
+
+			if len(creep_List) == 0 and len(spawnList) == 0:
+				print "creep_List & spawnList are empty!"
 				waveNo = waveNo + 1
 				frameCounter = 0
 
@@ -838,9 +840,14 @@ def getWaveInfo(waveNo):
 			creepCount = line.count(', ') + 1
 			print "creepCount = ", creepCount
 
-			line = line.split('[')[1].replace(', ',' ').split(']')[0]
+			#line = line.split(']')[0]
+			line = line.split('[')[1].replace(', ',' ').split(']')[0].split()
+
 			print "line = ", line
+			print "spawnList =", spawnList
 			for i in range(creepCount):
+				print i
+				print "--", line[i]
 				spawnList.append(int(line[i]))
 			break
 
@@ -895,8 +902,12 @@ class Creep:
 		#need to move 'creep_speed = 1' here
 
 		#self.attackDamage = 2 # again, a default stat for now...
-		self.attackFrameCount = 0
-		self.attackSpeed = 30  # the number of frames before creep can attack again
+
+		#only for attackedText function
+		self.attackedFrameCount = None
+		self.attackedXCoord = None
+		self.attackedYCoord = None
+		self.attackedDamageAmount = None
 
 	def getSpecies(self, speciesNo):
 		speciesFile = open("Species.txt", 'r')
@@ -951,17 +962,35 @@ class Creep:
 
 	def attacked(self, damage):
 		self.health = self.health - damage
-		print self, " health = ", self.health
+		#print self, " health = ", self.health
 		creepHealthCheck(self)
+		self.attackedText(damage)
 
-	def attackCheck(self):
-		global playerHealth
-		if self.attackFrameCount == self.attackSpeed:
-			# play attack animation - would have to be a loop in of itself
-			playerHealth = playerHealth - self.damageamage
-			self.attackFrameCount = 0
+	def attackedText(self, damageAmount = None):
+		if damageAmount != None:  # attackedText just initialised
+			self.attackedFrameCount = 0
+			self.attackedXCoord = self.x
+			self.attackedYCoord = self.y
+			self.attackedDamageAmount = damageAmount
 		else:
-			self.attackFrameCount = self.attackFrameCount + 1
+			if self.attackedFrameCount != None:
+				if self.attackedFrameCount <= 35:
+					displayText("-%s" % (self.attackedDamageAmount), smallText, red, self.attackedXCoord, (self.attackedYCoord - self.attackedFrameCount))
+					# figure out a way of making this go transparent over course of framCount (?)
+					self.attackedFrameCount = self.attackedFrameCount + 1
+				else:
+					self.attackedFrameCount = None
+					self.attackedXCoord = None
+					self.attackedYCoord = None
+					self.attackedDamageAmount = None
+
+	def attackPlayer(self):
+		global playerHealth
+
+		playerHealth = playerHealth - self.damage
+
+		creepIndex = creep_List.index(creep)
+		creep_List.pop(creepIndex)
 
 	def render(self, xCoord = None, yCoord = None): #, xRendCoord = self.x, yRendCoord = self.y
 		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction))
@@ -970,6 +999,7 @@ class Creep:
 			surface.blit(creep_Img, (self.x, self.y))
 		else:
 			surface.blit(creep_Img, (xCoord, yCoord))
+		self.attackedText()
 		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))
 
 def placeTower():
@@ -995,8 +1025,16 @@ class Tower:
 		self.target = None
 		self.targetXInitial = None
 		self.targetYInitial = None
-		self.shadow_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/Shadow.png"), (self.size, self.size))
+		self.shadow_Img = pygame.image.load("Graphics/Sprites/Other/Shadow.png")
+		self.cannonBall_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/CannonBall.png"), (self.size, self.size))
 		self.explosion_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/Explosion.png"), (self.size, self.size))
+
+		self.explosionSize = int(self.size * 2)
+		self.aftermathFrameCount = 0
+		self.aftermathXCoord = None
+		self.aftermathYCoord = None
+		self.aftermathBool = False
+
 
 	def targetFinder(self):
 		if not self.attacking:  # wont even be tested unless attacking is False (pointless?)
@@ -1025,15 +1063,40 @@ class Tower:
 			if self.targetFinder():
 				self.targetXInitial, self.targetYInitial = self.target.x, self.target.y
 				self.attacking = True
+				self.attackFrameCount = 1  # re-assigned at the beginning (maybe?)
 		else:
-			if self.attackFrameCount == self.attackSpeed:
+			if self.attackFrameCount == self.attackSpeed:  # attack frame
 				self.target.attacked(self.damage)
+				print "\n"
+				print "targetXInitial: ", self.targetXInitial
+				self.cannonBallAftermath(self.targetXInitial, self.targetYInitial)
 				self.attacking = False
 				self.target, self.targetXInitial, self.targetYInitial = None, None, None
-				self.attackFrameCount = 0
-			else:
+			elif self.attackFrameCount < self.attackSpeed:  # attack coming
+				sizeMultiplied = int(self.size + (self.size - ((float(self.attackFrameCount) / self.attackSpeed) * self.size)))
+				fallDistance = float((self.attackSpeed - self.attackFrameCount) / 0.25)
+				print "sizeMultiplied: ", sizeMultiplied
+
+				shadow_Img = pygame.transform.scale(self.shadow_Img, (sizeMultiplied, sizeMultiplied))
+				surface.blit(shadow_Img, (self.targetXInitial - (sizeMultiplied / 5), self.targetYInitial - (sizeMultiplied / 5)))
+				surface.blit(self.cannonBall_Img, (self.targetXInitial, (self.targetYInitial - fallDistance)))
 				self.attackFrameCount = self.attackFrameCount + 1
-				surface.blit(self.shadow_Img, (self.targetXInitial, self.targetYInitial))
+
+	def cannonBallAftermath(self, aftermathXCoord = None, aftermathYCoord = None):
+		if aftermathXCoord != None and aftermathYCoord != None:  #new aftermath being initialised
+			self.aftermathFrameCount = 1
+			self.aftermathXCoord = aftermathXCoord
+			self.aftermathYCoord = aftermathYCoord
+			self.aftermathBool = True
+		if self.aftermathFrameCount <= 35:  # during aftermath explosion  # 35 = self.aftermathFrameCount * 5
+			explosion_Img = pygame.image.load("Graphics/Sprites/Explosions/Explosion_%s.png" % (int(self.aftermathFrameCount / 5)))
+			explosion_Img = pygame.transform.scale(explosion_Img, (self.explosionSize, self.explosionSize))
+			surface.blit(explosion_Img, (self.aftermathXCoord - (self.explosionSize / 4), self.aftermathYCoord - (self.explosionSize / 4)))
+			self.aftermathFrameCount = self.aftermathFrameCount + 1
+		else:  # aftermath explosion ends
+			self.aftermathBool = False
+			self.aftermathXCoord = None  # back to __init__ state
+			self.aftermathYCoord = None
 
 	def render(self, xCoord = None, yCoord = None):
 		if self.hover:
@@ -1055,6 +1118,8 @@ class Tower:
 				self.cannonBallAttack()
 		else:
 			surface.blit(tower_Img, (xCoord, yCoord))
+			if self.aftermathBool:
+				self.cannonBallAftermath()
 
 
 class Grid:
