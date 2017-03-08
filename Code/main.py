@@ -1,23 +1,33 @@
-#from Creep import *  # cannot render because makes calls to 'surface'
-#from Tower import *
-#import __ini__
-import pygame, math, random, sys
+import __init__
+# import statement for Pygame, mathand sys libraries
+import pygame, math, sys  # currently not using math
 
-# Global variables for now:
+# Assigns the width and height of the screen as a tuple
 canvas_width = 1000
 canvas_height = 800
+canvas_dimensions = (canvas_width, canvas_height)
+surface = pygame.display.set_mode(canvas_dimensions)
 
+# Assigns the dimensions and the top-left coordinates of the map
 map_Size = ((1760 / 2.2), (1440 / 2.2))
 map_Coords = (20, 140)
 
+# Initialise Pygame
 pygame.init()
 
+# Manages how frequently surface updates ('flips')
+clock = pygame.time.Clock()
+fps = 60
+
+# The location of the mouse cursor on screen and the state of each mouse button (re-assigned each loop)
 mouse = pygame.mouse.get_pos()
 click = pygame.mouse.get_pressed()
 
+# Font styles for titles and regular text used when render/'displaying' text on screen
 largeText = pygame.font.SysFont('ubuntu', 80)  # 'ubuntu'
 smallText = pygame.font.SysFont('ubuntu', 20)  # 'ubuntu'
 
+# 3 element tuples (representing RGB values respectively) of commonly used colours in the program
 white = (255, 255, 255)
 black = (0, 0, 0)
 green = (0, 200, 0)
@@ -29,60 +39,69 @@ bright_orange = (255, 165, 0)
 map_green = (70, 147, 65)
 map_yellow = (249, 170, 10)
 map_grey = (135, 135, 135)
-path_blue = (0,191,255)
+path_blue = (0, 191, 255)
 
+# An integer of either 0 or 1, representing whether a menu button has been 'pressed' or not (such that action is only taken once button is 'un-pressed')
 button_State = 0
 
-# already within resetGameState()!
+# Default integers for the player's 'health' and 'budget' values and wave number the player is currently on for that map (re-assigned if save-data loaded)
 playerHealth = 20
 playerBudget = 0
-creep_List = []
-death_List = []
-tower_List = []
-entitySelected = None
-mapSelection = ""
 waveNo = 1
-frameCounter = 1
-# stars = "" # this is pulled from the player's save text file
-flagCoords = []
-map_Entrance = ()
-grid_List = []
-tempMapFlagCoords = []
 
+# A list of all grid, creep and tower objects, respectively
+grid_List = []
+creep_List = []
+tower_List = []
+# A list to record the location and number of creep deaths during a game
+death_List = []
+# Represents what (single) object is 'highlighted' or selected by the player
+entitySelected = None
+# A string of the name of the map the player has chosen
+mapSelection = ""
+# A counter incrememnted each game loop, used to time creep spawn rate for each round
+frameCounter = 1
+# A list of tuples of the X and Y coordinates for each 'flag' that make up the path creeps must follow on a given map
+flagCoords = []
+# A seperate list of tuples used when referencing grid coordinates rather than 'real' X and Y coordinates (such as when loading flag coords from text file)
+tempMapFlagCoords = []
+# A tuple representing the starting X and Y coordinates of a creep upon creation
+map_Entrance = ()
+# A Boolean limiteding the player from saving an un-tested or unsuccessful map in the editor
 testMapSuccessful = False
 
-creep_Speed = 1  # temporary - later refer to "bible"
+#creep_Speed = 1  # temporary - later refer to "Species.txt"
 
-# setting 'canvas':
-canvas_dimensions = (canvas_width, canvas_height)
-surface = pygame.display.set_mode(canvas_dimensions)
-
-# assigning menuBackground:
-menuBackground = pygame.image.load("Graphics/Background/Main_Background.png")
-
-#assigning grid_OverlayImg:
-#grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")
-grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay.png")
+# Pygame image load function assignment for the main menu background image
+menuBackground = pygame.image.load("Graphics/Background/Main_Background.png").convert()
+# Pygame image load function assignment and further re-scaling for the grid overlay image
+	#grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay(Test).png")  # only used for debug
+grid_OverlayImg = pygame.image.load("Graphics/Background/Grid_Overlay.png").convert_alpha()
 grid_OverlayImg = pygame.transform.scale(grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
 
 deltaTime = 0
 getTicksLastTime = 0
 
 def resetGameState():
-	global playerHealth, creep_List, death_List, tower_List, mapSelection, waveNo, stars, flagCoords, map_Entrance, grid_List
+	global playerHealth, playerBudget, waveNo, grid_List, creep_List, tower_List, death_List, frameCounter, mapSelection, flagCoords, map_Entrance, entitySelected, testMapSuccessful
+
 	playerHealth = 20
 	playerBudget = 0
-	creep_List = []
-	death_List = []
-	tower_List = []
-	mapSelection = ""
 	waveNo = 1
+
+	grid_List = []
+	# generateGridList()
+	creep_List = tower_List = death_List = []
+
 	frameCounter = 1
-	# stars = ""
+
+	mapSelection = ""
 	flagCoords = []
 	map_Entrance = ()
-	grid_List = []
-	generateGridList()
+
+	entitySelected = None
+
+	testMapSuccessful = False
 
 def displayText(text, font, colour, centX, centY):
 	if "\n" in text:
@@ -117,9 +136,9 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 
 	if msg != "Save" and msg != "Delete": # and msg != "delete"
 		if x + w > mouse[0] > x and y + h > mouse[1] > y:
-			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour))
+			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour)).convert_alpha()  # currently within gameloop and as such, pulling image from mem very often (look to make gloal assignment)
 			if click[0] == 1:
-				button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour))
+				button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour)).convert_alpha()
 				button_State = 1
 			if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
 			#event.type == pygame.MOUSEBUTTONUP
@@ -132,9 +151,9 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 				else:
 					action()
 		else:
-			button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour))
+			button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()
 	else:
-		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour))
+		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()
 		if x + w > mouse[0] > x and y + h > mouse[1] > y:
 			if click[0] == 1:
 				button_State = 1
@@ -269,7 +288,11 @@ def intro_menu():
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
-		pygame.display.flip()  # "Ok Pygame, now do your thang" - basically the same as pygame.display.update()
+
+		# limits surface update rate to a maximum of 60 frames per second
+		clock.tick(fps)
+		# Pygame function to update surface with what has been blit-ed
+		pygame.display.flip()
 
 def mapSelect():
 	pygame.display.set_caption("Will's TD Game -- Map Select")
@@ -302,6 +325,10 @@ def mapSelect():
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
+
+		# limits surface update rate to a maximum of 60 frames per second
+		clock.tick(fps)
+		# Pygame function to update surface with what has been blit-ed
 		pygame.display.flip()
 
 def main():
@@ -312,11 +339,11 @@ def main():
 	surface.fill(white)
 
 	# rendering background image
-	background_Img = pygame.image.load("Graphics/Background/Game_Background.png")
+	background_Img = pygame.image.load("Graphics/Background/Game_Background.png").convert()
 
 	"""
 	# loading temp map background
-	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
+	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg").convert()  # OG size = '1760 x 1440'
 	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
 	# should probs implement a 'try:, except: ' for each image render
 	"""
@@ -338,7 +365,7 @@ def main():
 
 	"""
 	# spawning checkpoint flags on mapFlags
-	checkpointFlag_Img = pygame.image.load("Graphics/checkpointFlag.jpg")
+	checkpointFlag_Img = pygame.image.load("Graphics/checkpointFlag.jpg").convert_alpha()
 	checkpointFlag_Img = pygame.transform.scale(checkpointFlag_Img, (flag_Size, flag_Size))
 	"""
 
@@ -438,16 +465,19 @@ def main():
 			frameCounter = frameCounter + 1
 
 		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
+			if event.type == pygame.QUIT:  # if window close button pressed
 				pygame_quit()
-		pygame.display.flip()  # basically the same as pygame.display.update()
+
+		# limits surface update rate to a maximum of 60 frames per second
+		clock.tick(fps)
+		# Pygame function to update surface with what has been blit-ed
+		pygame.display.flip()
 
 def checkSelected(mouse, click, curEntity):
 	global button_State, entitySelected
 	dataXCoord = canvas_width - 90
 	dataYCoord = 175  # initially, then incremented upon on future lines of data
-	statsBackground = pygame.image.load("Graphics/Background/Stats_Background.png")
-	#statsBackground = pygame.image.load("Graphics/Sprites/Buttons/Orange_pressed.png")
+	statsBackground = pygame.image.load("Graphics/Background/Stats_Background.png").convert_alpha()
 	lineSize = smallText.get_linesize()
 	lineIncrement = 1
 	gridSize = 36.5
@@ -500,23 +530,11 @@ def checkSelected(mouse, click, curEntity):
 
 
 def makeMap():
+	global frameCounter
+	frameCounter = 1
 	pygame.display.set_caption("Will's TD Game -- Map Editor")
 
 	surface.fill(map_grey)
-	"""
-	# loading temp map background
-	temp_MapImg = pygame.image.load("Graphics/Background/Template(22x18).jpg")  # OG size = '1760 x 1440'
-	temp_MapImg = pygame.transform.scale(temp_MapImg, (int(map_Size[0]), int(map_Size[1])))
-	"""
-
-	"""
-	index = 0
-	for yi in range(18):
-		for xi in range(22):
-			new_Grid = Grid(index, xi, yi)
-			grid_List.append(new_Grid)
-			index = index + 1
-	"""
 
 	generateGridList()
 
@@ -553,11 +571,16 @@ def makeMap():
 		surface.blit(grid_OverlayImg, map_Coords)
 
 		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
+			if event.type == pygame.QUIT:  # if window close button pressed
 				pygame_quit()
-		pygame.display.flip()  # basically the same as pygame.display.update()
+
+		# limits surface update rate to a maximum of 60 frames per second
+		clock.tick(fps)
+		# Pygame function to update surface with what has been blit-ed
+		pygame.display.flip()
 
 def generateGridList(mapFlags = None):
+	from Grid import Grid
 	global grid_List
 
 	gridNo = 0
@@ -567,7 +590,7 @@ def generateGridList(mapFlags = None):
 	for yi in range(18):
 		for xi in range(22):
 			if mapFlags == None:
-				new_Grid = Grid(gridNo, xi, yi)  # a blank (green slate) for beginning use in map editor
+				new_Grid = Grid(gridNo, xi, yi)#, map_Coords  # a blank (green slate) for beginning use in map editor
 			else:
 				gridColour = map_green
 				for i in mapFlags:
@@ -585,7 +608,7 @@ def generateGridList(mapFlags = None):
 							if (xi > i[0] and xi < mapFlags[index+1][0]) or (xi < i[0] and xi > mapFlags[index+1][0]):
 								gridColour = map_yellow
 				#elif: #if it's along the path to the next flag
-				new_Grid = Grid(gridNo, xi, yi, gridColour)
+				new_Grid = Grid(gridNo, xi, yi, gridColour) #map_Coords,
 			grid_List.append(new_Grid)
 			gridNo = gridNo + 1
 
@@ -741,6 +764,10 @@ def testMap():
 		curGrid.colour = path_blue
 		curGrid.render()
 		surface.blit(grid_OverlayImg, map_Coords)
+
+		# limits surface update rate to a maximum of 60 frames per second
+		clock.tick(fps)  # do i want to limit this?
+		# Pygame function to update surface with what has been blit-ed
 		pygame.display.flip()
 
 		curGrid = futureGrid
@@ -857,19 +884,25 @@ def getWaveInfo(waveNo):
 	waveFile.close()
 	return spawnRate, creepCount, spawnList
 
+# creep constructor function ...
 def addCreep(creepVariant = None):
+	from Creep import Creep
 	global map_Entrance
+	global creep_List
 
 	if creepVariant != None:
-		pass # in future, search through text file and read in creep's statement
-	if map_Entrance != []:
-		new_Creep = Creep(map_Entrance[0], (map_Entrance[1] - 15))  # - 15 so top left corner of pre-entrance tile
-	elif creepVariant != None:
-		print "ERROR: no map_Entrance defined!"
-		new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))  # temporary - depends on map type
+		if map_Entrance != []:
+			new_Creep = Creep(map_Entrance[0], (map_Entrance[1] - 15), creepVariant)  # - 15 so top left corner of pre-entrance tile
+			print new_Creep
+		else:
+			new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12), creepVariant)  # temporary - depends on map type
 	else:
-		new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12), creepVariant)
+		if map_Entrance != []:
+			new_Creep = Creep(map_Entrance[0], (map_Entrance[1] - 15))
+		else:
+			new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))
 	creep_List.append(new_Creep)
+	print "creep_List[0].x:", creep_List[0].x
 
 def creepHealthCheck(creep):
 	global death_List, playerBudget
@@ -878,6 +911,7 @@ def creepHealthCheck(creep):
 		print creep, "Died"
 		# increment current path death count in death_List
 		playerBudget = playerBudget + creep.cost
+		print "playerBudget: ", playerBudget
 		for i in death_List:
 			if i[0] == creep.flagNo:
 				i[1] = i[1] + 1
@@ -888,264 +922,22 @@ def creepHealthCheck(creep):
 	else:
 		return False
 
+# ------creep class goes here -------
 
-class Creep:
-	def __init__(self, x, y, speciesNo = 1):
-		self.x = int(x)
-		self.y = int(y)
-
-		self.size = 28
-		self.direction = 'West'
-
-		self.flagNo = 0
-		self.pathComplete = False
-
-		self.species, self.health, self.damage, self.speed, self.cost = self.getSpecies(speciesNo)
-		#need to move 'creep_speed = 1' here
-
-		#self.attackDamage = 2 # again, a default stat for now...
-
-		#only for attackedText function
-		self.attackedFrameCount = None
-		self.attackedXCoord = None
-		self.attackedYCoord = None
-		self.attackedDamageAmount = None
-
-	def getSpecies(self, speciesNo):
-		speciesFile = open("Species.txt", 'r')
-
-		parsing = False
-
-		for line in speciesFile:
-			if ("[%s]") % (speciesNo) in line:
-				species = line.split("] ")[1].split(":")[0]
-				parsing = True
-			elif parsing and "Health =" in line:
-				health = line.split(" = ")[1]
-			elif parsing and "Damage" in line:
-				damage = line.split(" = ")[1]
-			elif parsing and "Speed" in line:
-				speed = line.split(" = ")[1]
-			elif parsing and "Cost" in line:
-				cost = line.split(" = ")[1]
-			elif "[" in line:
-				parsing = False
-				break
-
-		speciesFile.close()
-		return (species, int(health), int(damage), int(speed), int(cost))
-
-	def creepPathFollow(self, flagCoords):
-		if self.flagNo == len(flagCoords):
-			print self, ": Complete"
-			self.pathComplete = True
-		else:
-			if (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5) and (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
-				self.flagNo += 1
-				print self, " flagNo = ", self.flagNo
-			else:
-				if not (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5):
-					if self.x < flagCoords[self.flagNo][0]:
-						self.direction = 'East'
-						self.x += creep_Speed
-						# print self.x, " < ", flagCoords[flagNo][0]
-					elif self.x > flagCoords[self.flagNo][0]:
-						self.direction = 'West'
-						self.x -= creep_Speed
-						# print self.x, " > ", flagCoords[flagNo][0]
-				elif not (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
-					if self.y < flagCoords[self.flagNo][1] + 0.5:
-						self.direction = 'South'
-						self.y += creep_Speed
-					elif self.y > flagCoords[self.flagNo][1]:
-						self.direction = 'North'
-						self.y -= creep_Speed
-			# print "x = ", self.x, ", y = ", self.y
-
-	def attacked(self, damage):
-		self.health = self.health - damage
-		#print self, " health = ", self.health
-		creepHealthCheck(self)
-		self.attackedText(damage)
-
-	def attackedText(self, damageAmount = None):
-		if damageAmount != None:  # attackedText just initialised
-			self.attackedFrameCount = 0
-			self.attackedXCoord = self.x
-			self.attackedYCoord = self.y
-			self.attackedDamageAmount = damageAmount
-		else:
-			if self.attackedFrameCount != None:
-				if self.attackedFrameCount <= 35:
-					displayText("-%s" % (self.attackedDamageAmount), smallText, red, self.attackedXCoord, (self.attackedYCoord - self.attackedFrameCount))
-					# figure out a way of making this go transparent over course of framCount (?)
-					self.attackedFrameCount = self.attackedFrameCount + 1
-				else:
-					self.attackedFrameCount = None
-					self.attackedXCoord = None
-					self.attackedYCoord = None
-					self.attackedDamageAmount = None
-
-	def attackPlayer(self):
-		global playerHealth
-
-		playerHealth = playerHealth - self.damage
-
-		creepIndex = creep_List.index(self)
-		creep_List.pop(creepIndex)
-
-	def render(self, xCoord = None, yCoord = None): #, xRendCoord = self.x, yRendCoord = self.y
-		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction))
-		creep_Img = pygame.transform.scale(creep_Img, (self.size, self.size))
-		if xCoord == None and yCoord == None:
-			surface.blit(creep_Img, (self.x, self.y))
-		else:
-			surface.blit(creep_Img, (xCoord, yCoord))
-		self.attackedText()
-		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))
-
+# Tower constructor function ...
 def placeTower():
+	from Tower import Tower
 	new_Tower = Tower(mouse[0], mouse[1], True)
 	tower_List.append(new_Tower)
 
-class Tower:
-	def __init__(self, x, y, hover):
-		self.type = "Basic"  # for now, will be read in from text file
-		self.x = x
-		self.y = y
+	print "creep_List:", creep_List
+	print "tower_List:", tower_List
 
-		self.size = 28
-		# self.target = creep_List[0]
-		self.direction = "None"
-		self.hover = hover
-
-		self.damage = 2 # again, a default stat for now...
-
-		self.attacking = False
-		self.attackSpeed = 120  # dependent on tower
-		self.attackFrameCount = 0
-		self.target = None
-		self.targetXInitial = None
-		self.targetYInitial = None
-		self.shadow_Img = pygame.image.load("Graphics/Sprites/Other/Shadow.png")
-		self.cannonBall_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/CannonBall.png"), (self.size, self.size))
-		self.explosion_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/Explosion.png"), (self.size, self.size))
-
-		self.explosionSize = int(self.size * 2)
-		self.aftermathFrameCount = 0
-		self.aftermathXCoord = None
-		self.aftermathYCoord = None
-		self.aftermathBool = False
+# ------tower class goes here ------
 
 
-	def targetFinder(self):
-		if not self.attacking:  # wont even be tested unless attacking is False (pointless?)
-			if len(creep_List) != 0:
-				self.target = creep_List[0]
-				return True
-			else:
-				return False
-		# note: creep_List[0] means that the target is always the one at the front
+# ------grid class goes here ------
 
-		"""
-		# if target is within range: " ", else self.direction = "None"
-		if target.x > self.x:
-			self.direction = "North"
-		elif target.x < self.x:
-			self.direction = "South"
-		if target.y > self.y:
-			self.direction = "East"
-		elif target.y < self.y:
-			self.direction = "West"
-		# need a section to account for creep speed, time of projectile and possible corners
-		"""
-
-	def cannonBallAttack(self):
-		if not self.attacking:
-			if self.targetFinder():
-				self.targetXInitial, self.targetYInitial = self.target.x, self.target.y
-				self.attacking = True
-				self.attackFrameCount = 1  # re-assigned at the beginning (maybe?)
-		else:
-			if self.attackFrameCount == self.attackSpeed:  # attack frame
-				self.target.attacked(self.damage)
-				print "\n"
-				print "targetXInitial: ", self.targetXInitial
-				self.cannonBallAftermath(self.targetXInitial, self.targetYInitial)
-				self.attacking = False
-				self.target, self.targetXInitial, self.targetYInitial = None, None, None
-			elif self.attackFrameCount < self.attackSpeed:  # attack coming
-				sizeMultiplied = int(self.size + (self.size - ((float(self.attackFrameCount) / self.attackSpeed) * self.size)))
-				fallDistance = float((self.attackSpeed - self.attackFrameCount) / 0.25)
-				print "sizeMultiplied: ", sizeMultiplied
-
-				shadow_Img = pygame.transform.scale(self.shadow_Img, (sizeMultiplied, sizeMultiplied))
-				surface.blit(shadow_Img, (self.targetXInitial - (sizeMultiplied / 5), self.targetYInitial - (sizeMultiplied / 5)))
-				surface.blit(self.cannonBall_Img, (self.targetXInitial, (self.targetYInitial - fallDistance)))
-				self.attackFrameCount = self.attackFrameCount + 1
-
-	def cannonBallAftermath(self, aftermathXCoord = None, aftermathYCoord = None):
-		if aftermathXCoord != None and aftermathYCoord != None:  #new aftermath being initialised
-			self.aftermathFrameCount = 1
-			self.aftermathXCoord = aftermathXCoord
-			self.aftermathYCoord = aftermathYCoord
-			self.aftermathBool = True
-		if self.aftermathFrameCount <= 35:  # during aftermath explosion  # 35 = self.aftermathFrameCount * 5
-			explosion_Img = pygame.image.load("Graphics/Sprites/Explosions/Explosion_%s.png" % (int(self.aftermathFrameCount / 5)))
-			explosion_Img = pygame.transform.scale(explosion_Img, (self.explosionSize, self.explosionSize))
-			surface.blit(explosion_Img, (self.aftermathXCoord - (self.explosionSize / 4), self.aftermathYCoord - (self.explosionSize / 4)))
-			self.aftermathFrameCount = self.aftermathFrameCount + 1
-		else:  # aftermath explosion ends
-			self.aftermathBool = False
-			self.aftermathXCoord = None  # back to __init__ state
-			self.aftermathYCoord = None
-
-	def render(self, xCoord = None, yCoord = None):
-		if self.hover:
-			# background = pygame.Display.set_mode()
-			tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_Transparent.png")
-			pygame.mouse.set_visible(False)
-			#  pygame.mouse.set_cursor  # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
-		else:
-			#self.cannonBallAttack()
-			if self.direction == "None":
-				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01.png")
-			else:
-				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction))
-
-		tower_Img = pygame.transform.scale(tower_Img, (self.size, self.size))
-		if xCoord == None and yCoord == None:
-			surface.blit(tower_Img, (self.x, self.y))
-			if not self.hover:
-				self.cannonBallAttack()
-		else:
-			surface.blit(tower_Img, (xCoord, yCoord))
-			if self.aftermathBool:
-				self.cannonBallAftermath()
-
-
-class Grid:
-	def __init__ (self, number, xi, yi, colour = map_green, direction = None):
-		self.number = number
-
-		self.xi = xi  # 0 - 21
-		self.yi = yi  # 0 - 17
-
-		self.size = 36.5
-
-		self.x = (xi * self.size) + map_Coords[0]
-		self.y = (yi * self.size) + map_Coords[1]
-
-		#self.direction = direction
-
-		self.colour = colour
-
-	def checkNeighbours():
-		# maybe want to do this in each loop of makeMap
-		pass
-
-	def render(self): #, x = self.x, y = self.y, colour = self.colour
-		pygame.draw.rect(surface, self.colour, (self.x, self.y, self.size, self.size))
 
 
 if __name__ == "__main__":  # https://goo.gl/1CRvRx & https://goo.gl/xF4xOF
