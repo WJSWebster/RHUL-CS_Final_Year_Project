@@ -8,19 +8,17 @@ class Tower(pygame.sprite.Sprite):
 		global creep_List
 		pygame.sprite.Sprite.__init__(self)
 
-		self.type = "Basic"  # for now, will be read in from text file
-		self.x = x
-		self.y = y
+		self.typeNo = 1
+		self.type, self.damage, self.attackSpeed, self.cost = self.getType()
+		self.x, self.y = x, y
 
 		self.size = 28
 		# self.target = creep_List[0]
 		self.direction = "None"
-		self.hover = hover
-
-		self.damage = 2 # again, a default stat for now...
+		self.hover = hover   # most likely True?
 
 		self.attacking = False
-		self.attackSpeed = 120  # dependent on tower
+		# self.attackSpeed = 120  # dependent on tower
 		self.attackFrameCount = 0
 		self.target = None
 		self.targetXInitial = None
@@ -37,6 +35,31 @@ class Tower(pygame.sprite.Sprite):
 
 		print "__init__ creep_List:", creep_List
 
+	def getType(self):
+		typeFile = open("Types.txt", 'r')
+
+		parsing = False
+
+		for line in typeFile:
+			if"[%s]" % (self.typeNo) in line:
+				typeName = line.split("] ")[1].split(":")[0]
+				parsing = True
+			elif parsing and "Damage =" in line:
+				damage = line.split(" = ")[1]
+			elif parsing and "Attack Speed =" in line:
+				attackSpeed = line.split(" = ")[1]
+			elif parsing and "Cost =" in line:
+				cost = line.split(" = ")[1]
+			elif "[%s]" % (self.typeNo + 1) in line:
+				parsing = False
+				break
+			"""
+			elif parsing and "Splash Damage =" in line:
+				splashDamage = line.split(" = ")[1]
+			"""
+
+		typeFile.close()
+		return (typeName, int(damage), int(attackSpeed), int(cost))
 
 	def targetFinder(self):
 		from main import creep_List
@@ -53,10 +76,8 @@ class Tower(pygame.sprite.Sprite):
 				print "target", self.target
 				return True
 			else:
-				print "Falso"
-				print "creep_List[0]", creep_List[0]
+				print "False"
 				return False
-			print "help?~~~"
 		# note: creep_List[0] means that the target is always the one at the front
 
 		"""

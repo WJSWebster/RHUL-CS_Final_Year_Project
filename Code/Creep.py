@@ -1,4 +1,5 @@
-from main import playerHealth, surface, entitySelected
+from main import playerHealth, entitySelected, smallText, red #, surface,
+import main
 import pygame
 pygame.init()
 
@@ -47,10 +48,9 @@ class Creep(pygame.sprite.Sprite):
 			elif parsing and "Cost" in line:
 				cost = line.split(" = ")[1]
 				parsing = False
-			elif "[%s]" % (speciesNo + 1)in line:
+			elif "[%s]" % (speciesNo + 1) in line:
 				parsing = False
 				break
-
 
 		speciesFile.close()
 		if float(speed) < 1:
@@ -88,7 +88,7 @@ class Creep(pygame.sprite.Sprite):
 	def attacked(self, damage):
 		self.health = self.health - damage
 		#print self, " health = ", self.health
-		creepHealthCheck(self)
+		main.creepHealthCheck(self)
 		self.attackedText(damage)
 
 	def attackedText(self, damageAmount = None):
@@ -100,7 +100,7 @@ class Creep(pygame.sprite.Sprite):
 		else:
 			if self.attackedFrameCount != None:
 				if self.attackedFrameCount <= 35:
-					displayText("-%s" % (self.attackedDamageAmount), smallText, red, self.attackedXCoord, (self.attackedYCoord - self.attackedFrameCount))
+					main.displayText("-%s" % (self.attackedDamageAmount), smallText, red, self.attackedXCoord, (self.attackedYCoord - self.attackedFrameCount))
 					# figure out a way of making this go transparent over course of framCount (?)
 					self.attackedFrameCount = self.attackedFrameCount + 1
 				else:

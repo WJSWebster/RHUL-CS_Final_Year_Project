@@ -1,16 +1,7 @@
-import __init__
+#import __init__
+from __init__ import *
 # import statement for Pygame, mathand sys libraries
 import pygame, math, sys  # currently not using math
-
-# Assigns the width and height of the screen as a tuple
-canvas_width = 1000
-canvas_height = 800
-canvas_dimensions = (canvas_width, canvas_height)
-surface = pygame.display.set_mode(canvas_dimensions)
-
-# Assigns the dimensions and the top-left coordinates of the map
-map_Size = ((1760 / 2.2), (1440 / 2.2))
-map_Coords = (20, 140)
 
 # Initialise Pygame
 pygame.init()
@@ -49,10 +40,6 @@ playerHealth = 20
 playerBudget = 0
 waveNo = 1
 
-# A list of all grid, creep and tower objects, respectively
-grid_List = []
-creep_List = []
-tower_List = []
 # A list to record the location and number of creep deaths during a game
 death_List = []
 # Represents what (single) object is 'highlighted' or selected by the player
@@ -252,7 +239,7 @@ def loadProgress(mapName = mapSelection):
 				if "playerHealth" in line:
 					playerHealth = line.split("= ")[1]
 				if "tower_List" in line:
-					towerList = line.split("= ")[1]
+					towerList = line.split("= ")[1]  # tower_List ??
 				if "waveNo" in line:
 					waveNo = line.split("= ")[1]
 			if ":" in line:
@@ -581,7 +568,7 @@ def makeMap():
 
 def generateGridList(mapFlags = None):
 	from Grid import Grid
-	global grid_List
+	global grid_List  # now pulled from GlobalVars class
 
 	gridNo = 0
 
@@ -801,7 +788,7 @@ def saveMap():
 				print "Sorry, that name is too short, please try again.\n"
 			loop = False
 		else:
-			print "Sorry, that name was too long, please try again.\n"
+			print "Sorry, that name is too long, please try again.\n"
 			also = "Also, t"
 		for line in textFile:
 			if savedMapName in line:
@@ -903,9 +890,10 @@ def addCreep(creepVariant = None):
 			new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))
 	creep_List.append(new_Creep)
 	print "creep_List[0].x:", creep_List[0].x
+	print "pygame.sprite.Sprite.groups: ", pygame.sprite.Sprite.groups
 
 def creepHealthCheck(creep):
-	global death_List, playerBudget
+	global death_List, playerBudget, creep_List  #from GlobalVars class
 
 	if creep.health == 0:
 		print creep, "Died"
@@ -927,6 +915,8 @@ def creepHealthCheck(creep):
 # Tower constructor function ...
 def placeTower():
 	from Tower import Tower
+	global tower_List
+
 	new_Tower = Tower(mouse[0], mouse[1], True)
 	tower_List.append(new_Tower)
 

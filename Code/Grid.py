@@ -1,5 +1,7 @@
-from main import map_Coords, frameCounter, surface
 import random, pygame
+pygame.init()
+from main import map_Coords, frameCounter, surface
+
 
 map_green = (70, 147, 65)
 map_yellow = (249, 170, 10)
