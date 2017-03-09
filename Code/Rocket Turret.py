@@ -44,7 +44,6 @@ class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
         for i in creep_List:
             # if (i.x within sprite.rect +-self.range) and (i.y within sprite.rect +-self.range):
                 range_List.append(i)
-
         for i in range_List:
             # self.target = the one with the highest flagNo & closest to next
         """
