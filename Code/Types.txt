@@ -1,0 +1,16 @@
+[1] Basic:  // should actually be rarer than rocketeer due to splash damage
+- Damage = 5
+- Attack Speed = 120
+- Cost = 20
+splash damage = ?
+
+[2] Rocketeer:
+- Damage = 5
+- Attack Speed = 120  // research
+- Cost = 10
+
+[3] Generator:
+- Damage = 0
+// slows down creeps in range
+- Attack Speed = ~~
+- Cost = 35

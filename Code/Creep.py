@@ -1,5 +1,15 @@
-class Sprite:
-	def __init__(self, x, y):
+from main import playerHealth, entitySelected, smallText, red #, surface,
+import main
+import pygame
+pygame.init()
+
+# note: creep class derives from Pygame 'Sprite' class
+class Creep(pygame.sprite.Sprite):
+	def __init__(self, x, y, speciesNo = 1):
+		# calls to the __init__ constructor in the 'Sprite' parent class
+		#super().__init__()
+		pygame.sprite.Sprite.__init__(self)
+
 		self.x = int(x)
 		self.y = int(y)
 
@@ -9,55 +19,123 @@ class Sprite:
 		self.flagNo = 0
 		self.pathComplete = False
 
-		self.health = 10  # this is the default for the example sprite atm
+		self.species, self.health, self.damage, self.speed, self.cost = self.getSpecies(speciesNo)
+		#need to move 'creep_speed = 1' here
 
-		self.attackDamage = 2 # again, a default stat for now...
-		self.attackFrameCount = 0
-		self.attackSpeed = 30  # the number of frames before creep can attack again
+		#self.attackDamage = 2 # again, a default stat for now...
+
+		#only for attackedText function
+		self.attackedFrameCount = None
+		self.attackedXCoord = None
+		self.attackedYCoord = None
+		self.attackedDamageAmount = None
+
+	def getSpecies(self, speciesNo):
+		speciesFile = open("Species.txt", 'r')
+
+		parsing = False
+
+		for line in speciesFile:
+			if "[%s]" % (speciesNo) in line:
+				species = line.split("] ")[1].split(":")[0]
+				parsing = True
+			elif parsing and "Health =" in line:
+				health = line.split(" = ")[1]
+			elif parsing and "Damage" in line:
+				damage = line.split(" = ")[1]
+			elif parsing and "Speed" in line:
+				speed = line.split(" = ")[1].split("\n")[0]
+			elif parsing and "Cost" in line:
+				cost = line.split(" = ")[1]
+				parsing = False
+			elif "[%s]" % (speciesNo + 1) in line:
+				parsing = False
+				break
+
+		speciesFile.close()
+		if float(speed) < 1:
+			return (species, int(health), int(damage), float(speed), int(cost))
+		else:
+			return (species, int(health), int(damage), int(speed), int(cost))
 
 	def creepPathFollow(self, flagCoords):
 		if self.flagNo == len(flagCoords):
 			print self, ": Complete"
 			self.pathComplete = True
 		else:
-			if (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5) and (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
+			if (flagCoords[self.flagNo][0] + (self.speed / 2)) > self.x > (flagCoords[self.flagNo][0] - (self.speed / 2)) and (flagCoords[self.flagNo][1] + (self.speed / 2)) > self.y > (flagCoords[self.flagNo][1] - (self.speed / 2)):
 				self.flagNo += 1
 				print self, " flagNo = ", self.flagNo
 			else:
-				if not (flagCoords[self.flagNo][0] + 0.5) > self.x > (flagCoords[self.flagNo][0] - 0.5):
+				if not (flagCoords[self.flagNo][0] + (self.speed / 2)) > self.x > (flagCoords[self.flagNo][0] - (self.speed / 2)):
 					if self.x < flagCoords[self.flagNo][0]:
 						self.direction = 'East'
-						self.x += creep_Speed
+						self.x += self.speed
 						# print self.x, " < ", flagCoords[flagNo][0]
 					elif self.x > flagCoords[self.flagNo][0]:
 						self.direction = 'West'
-						self.x -= creep_Speed
+						self.x -= self.speed
 						# print self.x, " > ", flagCoords[flagNo][0]
-				elif not (flagCoords[self.flagNo][1] + 0.5) > self.y > (flagCoords[self.flagNo][1] - 0.5):
-					if self.y < flagCoords[self.flagNo][1] + 0.5:
+				elif not (flagCoords[self.flagNo][1] + (self.speed / 2)) > self.y > (flagCoords[self.flagNo][1] - (self.speed / 2)):
+					if self.y < flagCoords[self.flagNo][1] + (self.speed / 2):
 						self.direction = 'South'
-						self.y += creep_Speed
+						self.y += self.speed
 					elif self.y > flagCoords[self.flagNo][1]:
 						self.direction = 'North'
-						self.y -= creep_Speed
+						self.y -= self.speed
 			# print "x = ", self.x, ", y = ", self.y
 
 	def attacked(self, damage):
 		self.health = self.health - damage
-		print self, " health = ", self.health
-		creepHealthCheck(self)
+		#print self, " health = ", self.health
+		main.creepHealthCheck(self)
+		self.attackedText(damage)
 
-	def attackCheck(self):
-		global heartHealth
-		if self.attackFrameCount == self.attackSpeed:
-			# play attack animation - would have to be a loop in of itself
-			heartHealth = heartHealth - self.attackDamage
-			self.attackFrameCount = 0
+	def attackedText(self, damageAmount = None):
+		if damageAmount != None:  # attackedText just initialised
+			self.attackedFrameCount = 0
+			self.attackedXCoord = self.x
+			self.attackedYCoord = self.y
+			self.attackedDamageAmount = damageAmount
 		else:
-			self.attackFrameCount = self.attackFrameCount + 1
+			if self.attackedFrameCount != None:
+				if self.attackedFrameCount <= 35:
+					main.displayText("-%s" % (self.attackedDamageAmount), smallText, red, self.attackedXCoord, (self.attackedYCoord - self.attackedFrameCount))
+					# figure out a way of making this go transparent over course of framCount (?)
+					self.attackedFrameCount = self.attackedFrameCount + 1
+				else:
+					self.attackedFrameCount = None
+					self.attackedXCoord = None
+					self.attackedYCoord = None
+					self.attackedDamageAmount = None
 
-	def render(self):
-		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/Creep01_%s.png" % (self.direction))
+	def attackPlayer(self):
+		#from main import creep_List
+		global playerHealth, creep_List
+
+		playerHealth = playerHealth - self.damage
+
+		creepIndex = creep_List.index(self)
+		creep_List.pop(creepIndex)
+
+	def render(self, xCoord = None, yCoord = None): #, xRendCoord = self.x, yRendCoord = self.y
+		from main import surface
+		#global surface
+		#http://programarcadegames.com/python_examples/f.php?file=sprite_collect_graphic.py
+		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction)).convert_alpha()
 		creep_Img = pygame.transform.scale(creep_Img, (self.size, self.size))
-		surface.blit(creep_Img, (self.x, self.y))
+		self.image = pygame.transform.scale(creep_Img, (self.size, self.size))
+		self.rect = self.image.get_rect()
+		# self.draw(surface)
+
+		if xCoord == None and yCoord == None:  # rendering on game map
+			surface.blit(creep_Img, (self.x, self.y))
+
+			if entitySelected == self:
+				silhouette_Img = pygame.image.load("Graphics/Sprites/Creeps/CreepSilhouette_%s.png" % (self.direction)).convert_alpha()
+				silhouette_Img = pygame.transform.scale(silhouette_Img, (self.size, self.size))
+				surface.blit(silhouette_Img, (self.x, self.y))
+		else:  # rendering as part of stats panel
+			surface.blit(creep_Img, (xCoord, yCoord))
+		self.attackedText()
 		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))
