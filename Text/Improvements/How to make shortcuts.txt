@@ -1,0 +1,14 @@
+How to make shortcuts:
+
+if multiple deaths are located within two checkpoints:
+	- this would have to be a list created, of length mapflagcoords. With each death when heading towards a next flag be marked
+	- if one element of this list = 2x (?) more than the list mean average, then a shortcut is created prior to that flag’s previous flag (ie, the start of the path which is dangerous)
+**make shortcut**
+- prior to shortcut being made, the start position of the shortcut replaces the “flag’s previous flag” element that we mentioned previously
+    - the end of the shortcut [shortcuts can only be straight lines] replaces the flag marked as dangerous
+- once shortcut is made, replace the number of deaths in the deathList (see earlier) with [either 0 or list’s mean average (?)]
+- MAKE SURE THAT DEATHLIST ACCOUNTS FOR CHANGE IN FLAGLIST!
+
+Additional note:
+- could make it so tunneller creeps only begin to spawn when this deathList condition is met?
+- Or, if after a certain amount of time, no creeps are reaching the finish, find the location with the highest deaths and then spawn a tunneller to shortcut that area instead?

@@ -1,0 +1,41 @@
+Things to fix in TD game:
+- when creep is killed, money added
+    - different value of £ added based on creep type
+        - each creep object has a type value (1, 2, 3) which can then be used to reference index’s of the creep bible (and pull other attributes when creating each creep object)
+            - health, speed, damage, reward(?) (special?) attributes
+            - tunneller variant, which can create shortcut paths (“linear and branching paths TD game”) *
+                - SEE: “How to make shortcuts” document
+            - Boss creep(?) played at end of level, very high hp
+- when tower is created, money is removed
+    - again, different amounts based on tower type
+        - Firing range, speed, damage, attack type, cost (other?)
+        - rocket variant, uses pygame positioning & rotation
+- If tower is highlighted, show firing range circle
+- fix mapFlagCoords so parsed from a text file (not hard-coded)
+- fix game loop such that creeps spawn on timer, rather than manually
+    - ’spawn creep’ button changed to ‘begin’
+    - creeps have a set number of spawns, after which, game is won (or, perhaps carries on infinitely, and a high score is given on defeat, instead)
+        - each creep ‘costs’ a certain amount, so ai must budget* 
+        - or each map has a list of creep types and amounts of each from which can be chosen and spawned
+- Level select screen accessible from home screen, which shows each map saved in the map text file
+    - investigate if it’s possible to generate and save a preview image when a map is ’saved’ such that they can be previewed in this menu
+- Implement gameloop ‘ticker’ that increments every game loop
+    - from this we will be able to have gun cooldowns, controlled creep spawns etc (if ticker div 20 == 0: fire gun)
+
+Additional:
+- stat tracker(?)
+    - implement a ‘save’ button (and ‘delete progress’ button) from the menu (then save these to a text file)
+- Creep ai earns points every time a creep reaches a flag coord
+- Info box on the right of the screen (that is currently unused)
+    - shows attributes of the currently selected tower or creep
+- Generate a difficulty parameter [easy, medium, hard] based on number of path tiles on map (made when saving map) (more tiles = easier)
+
+* Example of Computational Intelligence
+
+On mac side:
+- photoshop:
+    - make ‘greyed out’ style buttons
+    - make save [floppy disk] and delete [cross] symbols
+    - make options [gear] symbol(?)
+    - make tunneller sprite variant
+    - make simple rocket sprite
