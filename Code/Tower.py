@@ -1,11 +1,12 @@
-from main import surface, entitySelected, creep_List
+from main import surface, entitySelected, creep_List, explosion_Sound
 # import Creep
 import pygame
+pygame.init()
 
-class Tower(pygame.sprite.Sprite):
+class Tower(pygame.sprite.Sprite):  # may make this a basic class from which other tower types are derived from (ie, "Cannon" or "Rocketeer")
 	def __init__(self, x, y, hover):
-		from main import creep_List
-		global creep_List
+
+		super(Tower, self).__init__()
 		pygame.sprite.Sprite.__init__(self)
 
 		self.typeNo = 1
@@ -32,8 +33,6 @@ class Tower(pygame.sprite.Sprite):
 		self.aftermathXCoord = None
 		self.aftermathYCoord = None
 		self.aftermathBool = False
-
-		print "__init__ creep_List:", creep_List
 
 	def getType(self):
 		typeFile = open("Types.txt", 'r')
@@ -63,15 +62,9 @@ class Tower(pygame.sprite.Sprite):
 
 	def targetFinder(self):
 		from main import creep_List
-		global creep_List
 
-		print "creep_List", creep_List
-
-		print "finding target..."
 		if not self.attacking:  # wont even be tested unless attacking is False (pointless?)
-			print "im not attacking"
 			if len(creep_List) != 0:
-				print "creep_List[0]: ",creep_List[0]
 				self.target = creep_List[0]
 				print "target", self.target
 				return True
@@ -94,6 +87,7 @@ class Tower(pygame.sprite.Sprite):
 		"""
 
 	def cannonBallAttack(self):
+		from main import explosion_Sound  # need to look into this and other examples of redundent(mulitple) imports of same variables
 		if not self.attacking:
 			if self.targetFinder():
 				print "Tower target:", self.target
@@ -103,6 +97,7 @@ class Tower(pygame.sprite.Sprite):
 				self.attackFrameCount = 1  # re-assigned at the beginning (maybe?)
 		else:
 			if self.attackFrameCount == self.attackSpeed:  # attack frame
+				pygame.mixer.Sound.play(explosion_Sound)
 				self.target.attacked(self.damage)
 				self.cannonBallAftermath(self.targetXInitial, self.targetYInitial)
 				self.attacking = False
@@ -134,20 +129,20 @@ class Tower(pygame.sprite.Sprite):
 
 	def render(self, xCoord = None, yCoord = None):
 		if self.hover:
-			# background = pygame.Display.set_mode()
-			tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_Transparent.png").convert_alpha()
+			self.image = pygame.image.load("Graphics/Sprites/Towers/Tower01_Transparent.png").convert_alpha()
 			pygame.mouse.set_visible(False)
 			#  pygame.mouse.set_cursor  # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
 		else:
 			#self.cannonBallAttack()
-			if self.direction == "None":
-				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01.png").convert_alpha()
+			if self.direction == "None":  # placeholder, may replace whole sprite with cannon sprite
+				self.image = pygame.image.load("Graphics/Sprites/Towers/Tower01.png").convert_alpha()
 			else:
-				tower_Img = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction)).convert_alpha()
+				self.image = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction)).convert_alpha()
 
-		tower_Img = pygame.transform.scale(tower_Img, (self.size, self.size))
+		self.image = pygame.transform.scale(self.image, (self.size, self.size))
+
 		if xCoord == None and yCoord == None:  # rendering on game map
-			surface.blit(tower_Img, (self.x, self.y))
+			surface.blit(self.image, (self.x, self.y))
 
 			if entitySelected == self:
 				silhouette_Img = pygame.image.load("Graphics/Sprites/Towers/TowerSilhouette.png").convert_alpha()
@@ -157,6 +152,7 @@ class Tower(pygame.sprite.Sprite):
 			if not self.hover:  # and if tower of type [1]
 				self.cannonBallAttack()
 		else:
-			surface.blit(tower_Img, (xCoord, yCoord))
-			if self.aftermathBool:
-				self.cannonBallAftermath()
+			surface.blit(self.image, (xCoord, yCoord))
+
+		if self.aftermathBool:
+			self.cannonBallAftermath()

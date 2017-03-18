@@ -7,7 +7,7 @@ pygame.init()
 class Creep(pygame.sprite.Sprite):
 	def __init__(self, x, y, speciesNo = 1):
 		# calls to the __init__ constructor in the 'Sprite' parent class
-		#super().__init__()
+		super(Creep, self).__init__()
 		pygame.sprite.Sprite.__init__(self)
 
 		self.x = int(x)
@@ -88,8 +88,8 @@ class Creep(pygame.sprite.Sprite):
 	def attacked(self, damage):
 		self.health = self.health - damage
 		#print self, " health = ", self.health
-		main.creepHealthCheck(self)
 		self.attackedText(damage)
+		main.creepHealthCheck(self)
 
 	def attackedText(self, damageAmount = None):
 		if damageAmount != None:  # attackedText just initialised
@@ -122,20 +122,19 @@ class Creep(pygame.sprite.Sprite):
 		from main import surface
 		#global surface
 		#http://programarcadegames.com/python_examples/f.php?file=sprite_collect_graphic.py
-		creep_Img = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction)).convert_alpha()
-		creep_Img = pygame.transform.scale(creep_Img, (self.size, self.size))
-		self.image = pygame.transform.scale(creep_Img, (self.size, self.size))
+		self.image = pygame.image.load("Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction)).convert_alpha()
+		self.image = pygame.transform.scale(self.image, (self.size, self.size))
 		self.rect = self.image.get_rect()
 		# self.draw(surface)
 
 		if xCoord == None and yCoord == None:  # rendering on game map
-			surface.blit(creep_Img, (self.x, self.y))
+			surface.blit(self.image, (self.x, self.y))
 
 			if entitySelected == self:
 				silhouette_Img = pygame.image.load("Graphics/Sprites/Creeps/CreepSilhouette_%s.png" % (self.direction)).convert_alpha()
 				silhouette_Img = pygame.transform.scale(silhouette_Img, (self.size, self.size))
 				surface.blit(silhouette_Img, (self.x, self.y))
 		else:  # rendering as part of stats panel
-			surface.blit(creep_Img, (xCoord, yCoord))
+			surface.blit(self.image, (xCoord, yCoord))
 		self.attackedText()
 		#  pygame.draw.rect(surface, red, (self.x, self.y, self.width, self.height))

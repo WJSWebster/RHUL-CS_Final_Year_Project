@@ -6,7 +6,8 @@ splash damage = ?
 
 [2] Rocketeer:
 - Damage = 5
-- Attack Speed = 120  // research
+- Attack Speed = 120  
+			// research
 - Cost = 10
 
 [3] Generator:

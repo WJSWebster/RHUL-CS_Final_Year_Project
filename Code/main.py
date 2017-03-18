@@ -40,8 +40,6 @@ playerHealth = 20
 playerBudget = 0
 waveNo = 1
 
-# A list to record the location and number of creep deaths during a game
-death_List = []
 # Represents what (single) object is 'highlighted' or selected by the player
 entitySelected = None
 # A string of the name of the map the player has chosen
@@ -138,7 +136,8 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 				else:
 					action()
 		else:
-			button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()
+			button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()  # button not highlighted
+
 	else:
 		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()
 		if x + w > mouse[0] > x and y + h > mouse[1] > y:
@@ -153,11 +152,34 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 
 	displayText(msg, smallText, white, (x + (w / 2)), (y + (h / 2)))
 
+def picButton(msg, x, y, w, h, image, action, arguments = None):
+	global button_State
+	mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
+	click = pygame.mouse.get_pressed()   # " "
+
+	buttonImage = pygame.image.load("Graphics/Sprites/%s.png" % (image)).convert_alpha()
+	if x + w > mouse[0] > x and y + h > mouse[1] > y:  # highlighted
+		if click[0] == 1:  # clicked
+			button_State = 1
+		if button_State == 1 and click[0] == 0:
+			button_State = 0
+			if arguments != None:
+				action(arguments)
+			else:
+				action()
+
+	buttonImage = pygame.transform.scale(buttonImage, (w, h))
+	surface.blit(buttonImage, (x, y))
+
+	displayText(msg, smallText, white, (x + (w / 2)), (y + (h + (h / 2))))
+
 def saveProgress():
 	global mapSelection
 	mapName = ""
 	mapFile = open("MapFlagCoords.txt", 'r')
 	saveFile = open("Save.txt", 'r+')
+
+	print "current map: ", mapSelection, "\n"
 
 	# first check that map saves match map_List
 	for mapLine in mapFile:
@@ -175,44 +197,39 @@ def saveProgress():
 	mapFile.close()
 
 	saveFile.seek(0)  # http://stackoverflow.com/questions/3906137/why-cant-i-call-read-twice-on-an-open-file
-	lines = saveFile.read()
-	saveFile.seek(0)
+	lines = saveFile.readlines()
 
-	for i, line in enumerate(saveFile):
+	print "\nlines: ", lines, "\n"
+
+	#saveFile.seek(0)
+	writeLine = ("- playerHealth = %s\n- playerBudget = %s\n- tower_List = %s\n- waveNo = %s\n- death_List = %s\n") % (playerHealth, playerBudget, tower_List, waveNo, death_List)
+
+	for i, line in enumerate(lines):  # removing previous save data
 		if ":" in line:
 			if mapSelection == line.split(':')[0]:
-				if i < len(lines):
-					#if ":" in lines[i + 1]:
-					if ":" in next(saveFile):
-						print "there is nothing saved for this mapsave -- writing..."
-						#writeline = ("- playerHealth = %s\n- tower_List = %s\n- waveNo = %s\n") % (playerHealth, tower_List, waveNo)
-						#lines = lines.replace("%s: \n","%s: \n**test**\n")
-						next_line = next(saveFile)
-						print "next_line = ", next_line
-						saveFile.write('**TEST**\n')
-           				saveFile.write(next_line)
-						#saveFile.write(lines)
-						#writableLine = i + 1
-						#print "i:", i, ", writableLine:", writableLine
-					"""
-					else:
-						print "overwriting mapsave..."
-					"""
-				else:
-					writeline = ("- playerHealth = %s\n- tower_List = %s\n- waveNo = %s\n") % (playerHealth, tower_List, waveNo)
-					#writableLine = i
-		#print i, "=", writableLine,"?", i == writableLine
-		#if i == writableLine:
-			#print "hello"
-			#saveFile.write(writeline)
-			#saveFile.write("test")
+				if i < len(lines):  # avoids out of bounds error
+					if "- " in lines[i+1]:
+						for j in range(5):
+							print "\nremoving previous save data:"
+							print "popping: ", lines[i + 1]  # debug
+							lines.pop(i + 1)
+				print "\nwriting save data:"
+				lines.insert(i + 1, writeLine)
+				break
+
+	print "\nnew lines: ", lines, "\n"
+
+	saveFile.truncate(0)  # investigate
+	saveFile.seek(0)  # moves head back to beggining
+	saveFile.writelines(lines)
+
+	print "\nNew saveFile:"
+	saveFile.seek(0)
+	print saveFile.read()
 
 	if not saveFile.closed:
-		print "file is still open"
+		print "\nfile is still open"
 		saveFile.close()
-	#if saveFile.closed:
-	#	print "file is closed"
-	print "end2"
 
 def loadProgress(mapName = mapSelection):
 	if mapName != mapSelection:  #if an argument has been fed into function (ie, when pulling waveNo for buttons)
@@ -220,12 +237,13 @@ def loadProgress(mapName = mapSelection):
 		mapWaveProgress = 0
 	else:  #if loading progress upon entering a map
 		waveSearchOnly = False
-		global playerHealth
-		global towerList
-		global waveNo
+		global playerHealth, playerBudget, tower_List, waveNo, death_List
 
 	saveFile = open("Save.txt", 'r')
 	searching = False
+
+	#globalVarsList = (playerHealth, playerBudget, tower_List, waveNo, death_List)
+				#for var in globalVarsList
 
 	for line in saveFile:
 		if ":" in line:
@@ -238,22 +256,35 @@ def loadProgress(mapName = mapSelection):
 			else:
 				if "playerHealth" in line:
 					playerHealth = line.split("= ")[1]
+				if "playerBudget" in line:
+					playerBudget = line.split("= ")[1]
 				if "tower_List" in line:
-					towerList = line.split("= ")[1]  # tower_List ??
+					tower_List = line.split("= ")[1]  # tower_List ??
 				if "waveNo" in line:
 					waveNo = line.split("= ")[1]
+				if "death_List" in line:
+					death_List = line.split("= ")[1]
 			if ":" in line:
 				searching = False
+				break
 
 	saveFile.close()
+	return False
 
 def deleteProgress():
+	deletData = raw_input("are you sure you want to delete all progress? (y/n): ")
+	if deletData == "Y" or deletData == "y" or deletData == "yes":
+		pass
 	pass
 
 def intro_menu():
 	pygame.display.set_caption("Will's TD Game -- Menu")
 	pygame_quit = True  # this is a weird debug solution because otherwise 'pygame_quit' is undeclared
 	#  while menu:
+
+	pygame.mixer.music.stop()
+	#pygame.mixer.fadeout()
+
 	surface.fill(white)
 	surface.blit(menuBackground, (0, 0))
 
@@ -287,12 +318,14 @@ def mapSelect():
 	map_List = []
 	difficulty = ""
 	textFile = open("MapFlagCoords.txt", 'r')
+	saveFile = open("Save.txt", "r")
 
 	surface.fill(white)
 
-	for line in textFile:
-		if "=[(" in line:
-			tupleNo = line.count("(")
+	for textLine in textFile:
+		if "=[(" in textLine:
+			textMapName = textLine.split('=[')[0]
+			tupleNo = textLine.count("(")
 			if tupleNo <= 10:
 				difficulty = "Hard"
 			elif tupleNo <= 20:
@@ -300,9 +333,38 @@ def mapSelect():
 			else:
 				difficulty = "Easy"
 			#((waveNo/50)*100)
-			map_List.append(line.split('=[')[0] + ("  [%s]\n(%s)" % (str(waveNo), str(difficulty))))
+
+			"""
+			lineNo = sum(1 for line in open('Save.txt'))
+			print "lineNo: ", lineNo
+			"""
+			textWaveNo = loadProgress(textMapName)
+			if not textWaveNo:  # if false is returned by the method
+				textWaveNo = 1
+			"""
+			searching = False
+
+			for i, saveLine in enumerate(saveFile):
+				if textMapName in saveLine:
+					searching = True
+
+					if searching and "waveNo" in saveLine:
+						textWaveNo = saveLine.split('- waveNo = ')[1]
+						break
+				elif searching and ":" in saveLine:
+					searching = False
+					textWaveNo = 1
+					break
+			else:
+				textWaveNo = 1
+			"""
+
+			map_List.append(textMapName + ("  [%s]\n(%s)" % (str(textWaveNo), str(difficulty))))
+			saveFile.seek(0)
 
 	textFile.close()
+	saveFile.close()
+
 	while (True):
 		surface.blit(menuBackground, (0, 0))
 
@@ -371,9 +433,19 @@ def main():
 		else:
 			healthColour = white
 
-		towerCreated = button("Spawn tower", 200, 50, 200, 50, "Orange", placeTower)  # towerCreated legacy code, need to review
-		button("Spawn creep", 450, 50, 150, 50, "Red", addCreep)
-		button("Save", (canvas_width - 120), 50, 60, 60, "FloppyDisk", saveProgress)
+		towerHovering = False
+		for i in tower_List:
+			if i.hover:
+				towerHovering = True
+				break
+
+		if not towerHovering:
+			picButton('"Basic"', 200, 35, 50, 50, "Towers/Tower01", placeTower, 1)  # towerCreated legacy code, need to review
+			picButton('"Rocketeer"', 300, 35, 50, 50, "Towers/Tower01_East", placeTower, 2)
+		else:
+			# semitransparent version of Buttons
+			pass
+		picButton("Save", (canvas_width - 120), 50, 60, 60, "Buttons/FloppyDisk", saveProgress)
 
 		displayText("Your Health:\n%s" % (playerHealth), smallText, healthColour, (canvas_width - 320), 35)
 		displayText("Creeps left:\n%s/%s" % ((len(spawnList) + len(creep_List)), creepCount), smallText, white, (canvas_width - 320), 90)
@@ -411,6 +483,8 @@ def main():
 					i.x, i.y = mouse
 					if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
 						i.hover = False
+						pygame.mixer.Sound.play(towerPlacement_Sound)
+
 						pygame.mouse.set_visible(True)
 				else:
 					checkSelected(mouse, click, i)
@@ -423,11 +497,11 @@ def main():
 						checkSelected(mouse, click, i)
 						i.render()
 					else:
+						print "attacking player"
 						i.attackPlayer()
 
 
 			if len(creep_List) == 0 and len(spawnList) == 0:
-				print "creep_List & spawnList are empty!"
 				waveNo = waveNo + 1
 				frameCounter = 0
 
@@ -521,6 +595,9 @@ def makeMap():
 	frameCounter = 1
 	pygame.display.set_caption("Will's TD Game -- Map Editor")
 
+	pygame.mixer.music.load("Sounds/Music/First_In_Line.mp3")
+	pygame.mixer.music.play(-1)  # number of times the music plays (''-1' declares the music will play indefinitely)
+
 	surface.fill(map_grey)
 
 	generateGridList()
@@ -529,6 +606,12 @@ def makeMap():
 	# testMapSuccessful = False
 
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
+
+		if pygame.mouse.get_focused() == 0:
+			pygame.mixer.music.pause()
+		else:
+			pygame.mixer.music.unpause()
+
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 		click = pygame.mouse.get_pressed()
 
@@ -684,10 +767,10 @@ def testMap():
 
 	if pathTesting():
 		curGrid = pathTesting(True)
-		print "curGrid: ", curGrid.xi, curGrid.yi
+		#print "curGrid: ", curGrid.xi, curGrid.yi
 
 		startPoint = [(curGrid.xi + 1, curGrid.yi)]
-		print "startPoint: ", startPoint
+		#print "startPoint: ", startPoint
 		for j in startPoint:  # encountered a weird bug, only seems to append if startPoint is an iterable
 			tempMapFlagCoords.append(j)
 		backDirection = "East"
@@ -798,7 +881,6 @@ def saveMap():
 					print "Ok, overwriting..."
 					loop = False
 
-	print savedMapName
 	writeline = ("%s=%s\n") % (savedMapName, tempMapFlagCoords)
 	textFile.write(writeline)
 	print "Map '%s' successfully saved!" % (savedMapName)
@@ -812,16 +894,14 @@ def getFlagCoords():  # again, only if input argument is blank (for now)
 
 	for line in textFile:
 		if mapSelection in line:
-			print "Yep, it's here: ", line
+			# print "Yep, it's here: ", line
 
 			line = line.split('=[')[1].split(']')[0]
-			#  print "Split line: ", line
 
 			tupleCount = line.count("(")
-			print "number of tuples: ", tupleCount
+			# print "number of tuples: ", tupleCount
 
 			line = line.replace('(', ' ').replace('), (', ' ').replace(', ', ' ').replace(')', ' ').split()
-			#  print "circumsised 'list' line: ", line
 
 			for i in range(tupleCount):
 				#  print "i%s type: %s" % (i, type(line[i]))
@@ -836,7 +916,7 @@ def getFlagCoords():  # again, only if input argument is blank (for now)
 	textFile.close()
 
 	generateGridList(mapFlags)
-	print "done generateGridList! ^^^"
+	# print "done generateGridList! ^^^"
 
 	# flagCoords = []
 	for mx, my in mapFlags:
@@ -851,19 +931,14 @@ def getWaveInfo(waveNo):
 	for line in waveFile:
 		if ("%s) " % (waveNo)) in line:
 			spawnRate = int(line.split('{')[1].split('}')[0])
-			print "spawnRate = ", spawnRate
 
 			creepCount = line.count(', ') + 1
-			print "creepCount = ", creepCount
 
-			#line = line.split(']')[0]
 			line = line.split('[')[1].replace(', ',' ').split(']')[0].split()
 
-			print "line = ", line
-			print "spawnList =", spawnList
+			print "spawnRate: {%s}, creepCount: %s, spawnList : %s" % (spawnRate, creepCount, spawnList)
 			for i in range(creepCount):
-				print i
-				print "--", line[i]
+				#print i,": ", line[i]
 				spawnList.append(int(line[i]))
 			break
 
@@ -913,14 +988,21 @@ def creepHealthCheck(creep):
 # ------creep class goes here -------
 
 # Tower constructor function ...
-def placeTower():
+def placeTower(typeNo):
 	from Tower import Tower
+	from Rocketeer import Rocketeer
 	global tower_List
 
-	new_Tower = Tower(mouse[0], mouse[1], True)
+	if typeNo == 1:
+		typeClass = Tower
+	elif typeNo == 2:
+		typeClass = Rocketeer
+	else:
+		print "ERROR: typeNo not recognised!"
+
+	new_Tower = typeClass(mouse[0], mouse[1], True)
 	tower_List.append(new_Tower)
 
-	print "creep_List:", creep_List
 	print "tower_List:", tower_List
 
 # ------tower class goes here ------
@@ -938,7 +1020,7 @@ if __name__ == "__main__":  # https://goo.gl/1CRvRx & https://goo.gl/xF4xOF
 
 def pygame_quit():
 	pygame.quit()
-	#  sys.exit(0)
+	#  sys.exit(0)  # only reason to import sys
 	quit()
 
 """

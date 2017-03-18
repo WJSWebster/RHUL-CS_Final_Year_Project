@@ -1,5 +1,7 @@
 from GlobalVars import *
 
 from Grid import *
-from Creep import *  # cannot render because makes calls to 'surface'
+from Creep import *
 from Tower import *
+from Rocketeer import *
+from Rocket import *
