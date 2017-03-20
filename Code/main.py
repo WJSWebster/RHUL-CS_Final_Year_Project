@@ -1,5 +1,6 @@
 #import __init__
 from __init__ import *
+from GlobalVars import *
 # import statement for Pygame, mathand sys libraries
 import pygame, math, sys  # currently not using math
 
@@ -32,13 +33,6 @@ map_yellow = (249, 170, 10)
 map_grey = (135, 135, 135)
 path_blue = (0, 191, 255)
 
-# An integer of either 0 or 1, representing whether a menu button has been 'pressed' or not (such that action is only taken once button is 'un-pressed')
-button_State = 0
-
-# Default integers for the player's 'health' and 'budget' values and wave number the player is currently on for that map (re-assigned if save-data loaded)
-playerHealth = 20
-playerBudget = 0
-waveNo = 1
 
 # Represents what (single) object is 'highlighted' or selected by the player
 entitySelected = None
@@ -71,7 +65,7 @@ def resetGameState():
 	global playerHealth, playerBudget, waveNo, grid_List, creep_List, tower_List, death_List, frameCounter, mapSelection, flagCoords, map_Entrance, entitySelected, testMapSuccessful
 
 	playerHealth = 20
-	playerBudget = 0
+	#playerBudget = 20
 	waveNo = 1
 
 	grid_List = []
@@ -119,33 +113,33 @@ def button(msg, x, y, w, h, colour, action = None, mapName = None):  # change va
 		print "mouse position: ", mouse
 	"""
 
-	if msg != "Save" and msg != "Delete": # and msg != "delete"
-		if x + w > mouse[0] > x and y + h > mouse[1] > y:
-			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour)).convert_alpha()  # currently within gameloop and as such, pulling image from mem very often (look to make gloal assignment)
-			if click[0] == 1:
-				button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour)).convert_alpha()
-				button_State = 1
-			if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
-			#event.type == pygame.MOUSEBUTTONUP
-				button_State = 0
-				if action == intro_menu:
-					resetGameState()
-				if mapName != None:
-					mapSelection = mapName.split(' ')[0]
-					action()
-				else:
-					action()
-		else:
-			button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()  # button not highlighted
-
+	#if msg != "Save" and msg != "Delete": # and msg != "delete"
+	if x + w > mouse[0] > x and y + h > mouse[1] > y:
+		button = pygame.image.load("Graphics/Sprites/Buttons/%s_Highlighted.png" % (colour)).convert_alpha()  # currently within gameloop and as such, pulling image from mem very often (look to make gloal assignment)
+		if click[0] == 1:
+			button = pygame.image.load("Graphics/Sprites/Buttons/%s_Pressed.png" % (colour)).convert_alpha()
+			button_State = 1
+		if button_State == 1 and click[0] == 0:  # 'action() is not None' = legacy code
+		#event.type == pygame.MOUSEBUTTONUP
+			button_State = 0
+			if action == intro_menu:
+				resetGameState()
+			if mapName != None:
+				mapSelection = mapName.split(' ')[0]
+				action()
+			else:
+				action()
 	else:
-		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()
-		if x + w > mouse[0] > x and y + h > mouse[1] > y:
-			if click[0] == 1:
-				button_State = 1
-			if button_State == 1 and click[0] == 0:
-				button_State = 0
-				action()  # either saveProgress() or deleteProgress()
+		button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()  # button not highlighted
+
+	# else:
+	# 	button = pygame.image.load("Graphics/Sprites/Buttons/%s.png" % (colour)).convert_alpha()
+	# 	if x + w > mouse[0] > x and y + h > mouse[1] > y:
+	# 		if click[0] == 1:
+	# 			button_State = 1
+	# 		if button_State == 1 and click[0] == 0:
+	# 			button_State = 0
+	# 			action()  # either saveProgress() or deleteProgress()
 
 	button = pygame.transform.scale(button, (w, h))
 	surface.blit(button, (x, y))
@@ -164,8 +158,10 @@ def picButton(msg, x, y, w, h, image, action, arguments = None):
 		if button_State == 1 and click[0] == 0:
 			button_State = 0
 			if arguments != None:
+				print "argument == ", arguments
 				action(arguments)
 			else:
+				print "no arguments"
 				action()
 
 	buttonImage = pygame.transform.scale(buttonImage, (w, h))
@@ -202,13 +198,23 @@ def saveProgress():
 	print "\nlines: ", lines, "\n"
 
 	#saveFile.seek(0)
-	writeLine = ("- playerHealth = %s\n- playerBudget = %s\n- tower_List = %s\n- waveNo = %s\n- death_List = %s\n") % (playerHealth, playerBudget, tower_List, waveNo, death_List)
+	#writeLine1 = ("- playerHealth = %s\n- playerBudget = %s\n") % (playerHealth, playerBudget)
+	towerObj_List = []
+	towerObj = ()
+	for index, i in enumerate(tower_List):
+		if not i.hover:
+			towerObj = (i.typeNo, i.x, i.y)
+			print "towerObj ", index, "= "
+			towerObj_List.append(towerObj)
+	#writeLine2 = ("\n- waveNo = %s\n- death_List = %s\n") % (waveNo, death_List)
+
+	writeLine = ("- playerHealth = %s\n- playerBudget = %s\n- tower_List = %s\n- waveNo = %s\n- death_List = %s\n") % (playerHealth, playerBudget, towerObj_List, waveNo, death_List)
 
 	for i, line in enumerate(lines):  # removing previous save data
 		if ":" in line:
 			if mapSelection == line.split(':')[0]:
 				if i < len(lines):  # avoids out of bounds error
-					if "- " in lines[i+1]:
+					if "- " in lines[i + 1]:
 						for j in range(5):
 							print "\nremoving previous save data:"
 							print "popping: ", lines[i + 1]  # debug
@@ -231,13 +237,19 @@ def saveProgress():
 		print "\nfile is still open"
 		saveFile.close()
 
-def loadProgress(mapName = mapSelection):
+def loadProgress(mapName = mapSelection):  # TODO for some reason this is not assigning to mapSelection!
+	#global mapSelection
+
+	if mapName == "":  # that is, if no argument was passed in, as, even if mapSelection is assigned, this still results in mapName == ""
+		mapName = mapSelection
+
 	if mapName != mapSelection:  #if an argument has been fed into function (ie, when pulling waveNo for buttons)
 		waveSearchOnly = True
-		mapWaveProgress = 0
+		# no need to reference globals, as immediately returning waveNo
 	else:  #if loading progress upon entering a map
 		waveSearchOnly = False
 		global playerHealth, playerBudget, tower_List, waveNo, death_List
+		print "\nwe're searching for data on ", mapSelection
 
 	saveFile = open("Save.txt", 'r')
 	searching = False
@@ -249,33 +261,85 @@ def loadProgress(mapName = mapSelection):
 		if ":" in line:
 			if mapName == line.split(':')[0]:
 				searching = True
+				print mapName, " searching!"
 		if searching:
 			if waveSearchOnly:
 				if "waveNo" in line:
-					return line.split("= ")[1]
+					return line.split("= ")[1].split('\n')[0]  #only used in a string, and as such does not need to be converted into a int
 			else:
 				if "playerHealth" in line:
-					playerHealth = line.split("= ")[1]
+					playerHealth = int(line.split("= ")[1].split('\n')[0])
 				if "playerBudget" in line:
-					playerBudget = line.split("= ")[1]
+					playerBudget = int(line.split("= ")[1].split('\n')[0])
+					print type(playerBudget)
 				if "tower_List" in line:
-					tower_List = line.split("= ")[1]  # tower_List ??
+					tupleCount = line.count("(")  # counts the number of open brackets in the line (in turn, indicating the number of tupes that exist in the list)
+					towerLine = line.split('= [')[1].replace('(', ' ').replace(', ',' ').replace(')', ' ').replace(']\n', ' ').split()
+
+					for i in range(tupleCount):
+ 						if towerLine[0] == '1':
+							typeClass = Tower
+						elif towerLine[0] == '2':
+							typeClass = Rocketeer
+						else:
+							print "ERROR: typeNo not recognised!"
+							typeClass = None
+
+						new_Tower = typeClass(int(towerLine[1]), int(towerLine[2]), False)
+						tower_List.append(new_Tower)
+						for j in range(3):
+							towerLine.pop(0)
+				#	tower_List = line.split("= ")[1] .split('\n')[0] # TODO need to fix the way objects are stored in save file!
 				if "waveNo" in line:
-					waveNo = line.split("= ")[1]
+					waveNo = int(line.split("= ")[1].split('\n')[0])
 				if "death_List" in line:
-					death_List = line.split("= ")[1]
-			if ":" in line:
+					death_List = line.split("= ")[1].split('\n')[0]
+			if mapName not in line and ":" in line:  # and searching already = True
 				searching = False
 				break
 
 	saveFile.close()
-	return False
+	return False  # only useful when no waveNo in a wave only search
 
-def deleteProgress():
-	deletData = raw_input("are you sure you want to delete all progress? (y/n): ")
+def deleteProgress(mapName = None):
+	textFile = open("Save.txt", 'r+')
+
+	print mapName
+
+	lines = textFile.readlines()
+	textFile.seek(0)
+
+	if mapName == None:
+		deleteTerm = "ALL"
+	else:
+		deleteTerm = "your %s" % (mapName)
+
+	deletData = raw_input("Are you sure you want to delete %s progress? (y/n): " % (deleteTerm))
 	if deletData == "Y" or deletData == "y" or deletData == "yes":
-		pass
-	pass
+		print "Ok, deleting..."
+		for i, line in enumerate(textFile):
+			if ":" in line and i < len(lines):
+				if "- " in lines[i + 1]:
+					if mapName == line.split(':')[0] or mapName == None:
+						while ":" not in lines[i + 1]:
+							print "popping: ", lines[i + 1]  # debug
+							lines.pop(i + 1)
+		"""
+		else:
+			if mapName == None:
+				print "No save data found to delete?"
+			else:
+				print "No save data found for %s to delete" % (mapName)
+		"""
+		textFile.truncate(0)  # investigate
+		textFile.seek(0)  # moves head back to beggining
+		textFile.writelines(lines)
+
+		print "\nDone!\n"
+	else:
+		print "\nOk, nevermind\n"
+
+	textFile.close()
 
 def intro_menu():
 	pygame.display.set_caption("Will's TD Game -- Menu")
@@ -301,8 +365,7 @@ def intro_menu():
 		button("Make Map", makeButtonXPos, 450, 150, 50, "Orange", makeMap)
 		button("Quit", quitButtonXPos, 450, 100, 50, "Red", pygame_quit)
 		#button("Save", saveButtonXPos, 50, 60, 60, "FloppyDisk", saveProgress)
-		button("Delete", deleteButtonxPos, 50, 60, 60, "Cross", deleteProgress)
-
+		picButton("Delete", deleteButtonxPos, 50, 60, 60, "Buttons/Cross", deleteProgress)
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				pygame_quit()
@@ -324,6 +387,9 @@ def mapSelect():
 
 	for textLine in textFile:
 		if "=[(" in textLine:
+			difficulty = ""
+			textWaveNo = 1
+
 			textMapName = textLine.split('=[')[0]
 			tupleNo = textLine.count("(")
 			if tupleNo <= 10:
@@ -332,44 +398,29 @@ def mapSelect():
 				difficulty = "Medium"
 			else:
 				difficulty = "Easy"
-			#((waveNo/50)*100)
 
-			"""
-			lineNo = sum(1 for line in open('Save.txt'))
-			print "lineNo: ", lineNo
-			"""
-			textWaveNo = loadProgress(textMapName)
+			textWaveNo = loadProgress(textMapName)  #either returns false if no result found, or the waveNo
 			if not textWaveNo:  # if false is returned by the method
 				textWaveNo = 1
-			"""
-			searching = False
 
-			for i, saveLine in enumerate(saveFile):
-				if textMapName in saveLine:
-					searching = True
-
-					if searching and "waveNo" in saveLine:
-						textWaveNo = saveLine.split('- waveNo = ')[1]
-						break
-				elif searching and ":" in saveLine:
-					searching = False
-					textWaveNo = 1
-					break
-			else:
-				textWaveNo = 1
-			"""
-
-			map_List.append(textMapName + ("  [%s]\n(%s)" % (str(textWaveNo), str(difficulty))))
+			map_List.append(textMapName + ("  [%s/20]\n(%s)" % (str(textWaveNo), str(difficulty))))
 			saveFile.seek(0)
 
 	textFile.close()
 	saveFile.close()
 
+	buttonXCoord = (canvas_width/2) - (150 / 2)
+
 	while (True):
 		surface.blit(menuBackground, (0, 0))
 
+		button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
+
 		for i in map_List:
-			button(i, (canvas_width/2) - (150 / 2), (70 * (map_List.index(i) + 1)), 150, 50, "Blue", main, i)
+			buttonYCoord = (70 * (map_List.index(i) + 1))
+
+			button(i, buttonXCoord, buttonYCoord, 200, 50, "Blue", main, i)
+			picButton("", buttonXCoord + 220, buttonYCoord, 40, 40, "Buttons/Cross", deleteProgress, i.split('  [')[0])
 
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -381,7 +432,7 @@ def mapSelect():
 		pygame.display.flip()
 
 def main():
-	global map_Entrance, death_List, waveNo, frameCounter
+	global map_Entrance, death_List, waveNo, frameCounter, playerBudget
 	pygame.display.set_caption("Will's TD Game -- Game")
 
 	# rendering 'canvas':
@@ -402,15 +453,26 @@ def main():
 
 	# filling death_List
 	for i in flagCoords:
-		death_List.append([flagCoords.index(i), 0])
+		death_List.append([flagCoords.index(i), 0])  # This is replaced if loadProgress finds save data
+
+	loadProgress()
 
 	#print "death_List =", death_List
 	map_Entrance = flagCoords[0]
 	#print "map_Entrance = ", map_Entrance
 	flag_Size = 30
 
-	spawnList = []
+	path_List = []
+
+	for i in grid_List:  # TODO will have to fix this such that if tunneler creep makes new path this is updated
+		if i.colour == map_yellow:
+			path_List.append(i)
+
+	spawnList = []  # should these not be global?  TODO investigate
 	creepCount = 0
+
+	basicTowerCost = 20  # TODO these are currently hard-coded, fix?
+	RocketeerTowerCost = 10
 
 	"""
 	# spawning checkpoint flags on mapFlags
@@ -421,6 +483,10 @@ def main():
 	while (True):  # debug: creates an infinite loop, so window doesnt immediately close!
 		mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
 		click = pygame.mouse.get_pressed()   # " "
+
+		#print playerBudget  # TODO why is this not updating, when it's updating in other places such as creepHealthCheck()
+		#tempPlayerBudget = getPlayerBudget()
+		tempPlayerBudget = playerBudget
 
 		surface.blit(background_Img, (0, 0))
 
@@ -440,17 +506,26 @@ def main():
 				break
 
 		if not towerHovering:
-			picButton('"Basic"', 200, 35, 50, 50, "Towers/Tower01", placeTower, 1)  # towerCreated legacy code, need to review
-			picButton('"Rocketeer"', 300, 35, 50, 50, "Towers/Tower01_East", placeTower, 2)
+			if playerBudget >= basicTowerCost:
+				picButton('"Basic" (%s)' % (basicTowerCost), 200, 35, 50, 50, "Towers/Tower01", placeTower, 1)
+			else:
+				pass #picButton greyed out
+			if playerBudget >= RocketeerTowerCost:
+				picButton('"Rocketeer" (%s)' % (RocketeerTowerCost), 300, 35, 50, 50, "Towers/Tower01_East", placeTower, 2)
+			else:
+				pass # ""
 		else:
 			# semitransparent version of Buttons
 			pass
-		picButton("Save", (canvas_width - 120), 50, 60, 60, "Buttons/FloppyDisk", saveProgress)
+
+		displayText("Your Budget:\n%s" % (tempPlayerBudget), smallText, white, (canvas_width - 420), 60)
 
 		displayText("Your Health:\n%s" % (playerHealth), smallText, healthColour, (canvas_width - 320), 35)
 		displayText("Creeps left:\n%s/%s" % ((len(spawnList) + len(creep_List)), creepCount), smallText, white, (canvas_width - 320), 90)
 
 		displayText("Wave:\n%s" % (waveNo), smallText, white, (canvas_width - 220), 60)
+
+		picButton("Save", (canvas_width - 120), 20, 60, 60, "Buttons/FloppyDisk", saveProgress)
 
 		if playerHealth <= 0:
 			pygame.draw.rect(surface, white, (0, 0, canvas_width, canvas_height))
@@ -469,7 +544,6 @@ def main():
 		########################
 		if playerHealth > 0:
 		# print "frameCounter = ", frameCounter
-
 			if frameCounter == 1:
 				spawnRate, creepCount, spawnList = getWaveInfo(waveNo)
 
@@ -480,15 +554,30 @@ def main():
 
 			for i in tower_List:
 				if i.hover:
+					towerPlacement = True
 					i.x, i.y = mouse
 					if click[0] == 1 and (map_Coords[0] <= mouse[0] <= (map_Coords[0] + map_Size[0])) and (map_Coords[1] <= mouse[1] <= (map_Coords[1] + map_Size[1])):
-						i.hover = False
-						pygame.mixer.Sound.play(towerPlacement_Sound)
+						for g in path_List:
+							if ((g.x <= mouse[0] <= g.x + g.size) and (g.y <= mouse[1] <= g.y + g.size)) or ((g.x <= mouse[0] + i.size <= g.x + g.size) and (g.y <= mouse[1] + i.size <= g.y + g.size)):
+								towerPlacement = False
+								break
+						if towerPlacement:
+							i.hover = False
+							pygame.mixer.Sound.play(towerPlacement_Sound)
+							playerBudget = playerBudget - i.cost
 
-						pygame.mouse.set_visible(True)
+							pygame.mouse.set_visible(True)
+						else:
+							# TODO make hover sprite red or play error sound or something?
+							pass
 				else:
 					checkSelected(mouse, click, i)
 				i.render()
+
+			"""
+			for i in rocket_List:
+				i.render()
+			"""
 
 			for i in creep_List:
 				if not creepHealthCheck(i):
@@ -533,6 +622,14 @@ def main():
 		clock.tick(fps)
 		# Pygame function to update surface with what has been blit-ed
 		pygame.display.flip()
+"""
+def getPlayerBudget(increaseAmount = None):
+	global playerBudget
+	if increaseAmount != None:
+		playerBudget += increaseAmount
+	print playerBudget
+	return int(playerBudget)
+"""
 
 def checkSelected(mouse, click, curEntity):
 	global button_State, entitySelected
@@ -861,15 +958,14 @@ def saveMap():
 	global tempMapFlagCoords
 
 	textFile = open("MapFlagCoords.txt", 'r+')
-	loop = True
 
-	while loop:
+	while True:
 		also = "T"
 		savedMapName = raw_input("Type in the name of this map: ")
 		if len(savedMapName) < 15:
 			if len(savedMapName) <= 0:
 				print "Sorry, that name is too short, please try again.\n"
-			loop = False
+			break
 		else:
 			print "Sorry, that name is too long, please try again.\n"
 			also = "Also, t"
@@ -879,7 +975,7 @@ def saveMap():
 				userResponce = raw_input("Would you like to overwrite '%s'? (Y/N)") % (savedMapName)
 				if ('y' or 'Y' or 'yes' or 'Yes') in userResponce:
 					print "Ok, overwriting..."
-					loop = False
+					break
 
 	writeline = ("%s=%s\n") % (savedMapName, tempMapFlagCoords)
 	textFile.write(writeline)
@@ -936,13 +1032,12 @@ def getWaveInfo(waveNo):
 
 			line = line.split('[')[1].replace(', ',' ').split(']')[0].split()
 
-			print "spawnRate: {%s}, creepCount: %s, spawnList : %s" % (spawnRate, creepCount, spawnList)
+			print "spawnRate: {%s}, creepCount: %s, spawnList : %s\n" % (spawnRate, creepCount, spawnList)
 			for i in range(creepCount):
-				#print i,": ", line[i]
+				print i,": ", line[i]
 				spawnList.append(int(line[i]))
 			break
 
-	print "spawnList = ", spawnList
 	waveFile.close()
 	return spawnRate, creepCount, spawnList
 
@@ -964,17 +1059,20 @@ def addCreep(creepVariant = None):
 		else:
 			new_Creep = Creep((map_Size[0] + map_Coords[0]), (((map_Size[1] + map_Coords[1]) / 2) + 12))
 	creep_List.append(new_Creep)
-	print "creep_List[0].x:", creep_List[0].x
-	print "pygame.sprite.Sprite.groups: ", pygame.sprite.Sprite.groups
+	# print "pygame.sprite.Sprite.groups: ", pygame.sprite.Sprite.groups  #TODO investigate Sprite.groups
 
 def creepHealthCheck(creep):
-	global death_List, playerBudget, creep_List  #from GlobalVars class
+	#from GlobalVars import death_List, playerBudget, creep_List
+	global death_List, creep_List, playerBudget  #from GlobalVars class
 
 	if creep.health == 0:
 		print creep, "Died"
-		# increment current path death count in death_List
+
 		playerBudget = playerBudget + creep.cost
 		print "playerBudget: ", playerBudget
+		#getPlayerBudget()
+
+		# increment current path death count in death_List
 		for i in death_List:
 			if i[0] == creep.flagNo:
 				i[1] = i[1] + 1
