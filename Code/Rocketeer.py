@@ -1,16 +1,19 @@
 from main import surface, entitySelected, creep_List, firingRocket_Sound, rocket_List
-#from Tower import Tower
-import pygame, math
+from Tower import *
+import pygame
+import math
 pygame.init()
 
-class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
+
+class Rocketeer(Tower):  # need to make derived from turret class
     def __init__(self, x, y, hover):  # maybe not needed, as seen above ^^
         #from main import creep_List
-        super(Rocketeer, self).__init__()
-        pygame.sprite.Sprite.__init__(self)
+        #super(Rocketeer, self).__init__()
+        Tower.__init__(self, x, y, hover)
 
         self.typeNo = 2
-        self.type, self.damage, self.attackSpeed, self.cost = self.getType()
+        self.type, self.damage, self.attackSpeed, self.cost = Tower.getType(
+            self)
         self.x, self.y = x, y
 
         self.size = 28
@@ -72,7 +75,8 @@ class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
                 self.rotate()
                 if self.direction != None:
                     pygame.mixer.Sound.play(firingRocket_Sound)
-                    newRocket = Rocket(self, self.target, self.direction, self.damage)
+                    newRocket = Rocket(self, self.target,
+                                       self.direction, self.damage)
                     rocket_List.append(newRocket)
 
                     self.attacking = True
@@ -104,11 +108,13 @@ class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
         #angleVector = math.degrees(math.atan(yOpp/xAdj))
         """
 
-        angleVector = math.atan2(selfPos[1], selfPos[0]) - math.atan2(targetPos[1], targetPos[0])  #http://stackoverflow.com/a/23408996
+        # http://stackoverflow.com/a/23408996
+        angleVector = math.atan2(
+            selfPos[1], selfPos[0]) - math.atan2(targetPos[1], targetPos[0])
         angleVector = angleVector * 360 / (2 * math.pi)
 
         if angleVector < 0:
-        	angleVector = angleVector + 360
+            angleVector = angleVector + 360
 
         print "angleVector: ", angleVector
 
@@ -127,13 +133,13 @@ class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
 
         print "angleVector: ", angleVector
 
-        if 315<=angleVector<361 or 0<=angleVector<45:
+        if 315 <= angleVector < 361 or 0 <= angleVector < 45:
             direction = "North"
-        elif 45<=angleVector<135:
+        elif 45 <= angleVector < 135:
             direction = "East"
-        elif 135<=angleVector<225:
+        elif 135 <= angleVector < 225:
             direction = "South"
-        elif 225<=angleVector<315:
+        elif 225 <= angleVector < 315:
             direction = "West"
         else:
             print "ERROR: angle not within any valid direction range (%s)" % (str(angleVector))
@@ -159,43 +165,48 @@ class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
     def length(self, v):
         import math
 
-        return math.sqrt(v[0]**2+v[1]**2)
+        return math.sqrt(v[0]**2 + v[1]**2)
 
     def dot_product(self, v, w):
-       return v[0]*w[0]+v[1]*w[1]
+        return v[0] * w[0] + v[1] * w[1]
 
     def determinant(self, v, w):
-       return v[0]*w[1]-v[1]*w[0]
+        return v[0] * w[1] - v[1] * w[0]
 
     def inner_angle(self, v, w):
         import math
 
         print "\ncreep: ", w
-        cosx = self.dot_product(v,w)/(self.length(v)*self.length(w))
-        rad = math.acos(cosx) # in radians
-        return rad*180/math.pi # returns degrees
+        cosx = self.dot_product(v, w) / (self.length(v) * self.length(w))
+        rad = math.acos(cosx)  # in radians
+        return rad * 180 / math.pi  # returns degrees
 
     def angle_clockwise(self, A, B):
-        inner = self.inner_angle(A,B)
-        det = self.determinant(A,B)
+        inner = self.inner_angle(A, B)
+        det = self.determinant(A, B)
         inner = inner
-        if det<0: #this is a property of the det. If the det < 0 then B is clockwise of A
+        if det < 0:  # this is a property of the det. If the det < 0 then B is clockwise of A
             return inner
-        else: # if the det > 0 then A is immediately clockwise of B
-            return (360-inner)
+        else:  # if the det > 0 then A is immediately clockwise of B
+            return (360 - inner)
 
-    def render(self, xCoord = None, yCoord = None):  # only takes in these arguments when rendering again in stats screen
+    # only takes in these arguments when rendering again in stats screen
+    def render(self, xCoord=None, yCoord=None):
         if self.hover:  # not yet placed
-            self.image = pygame.image.load("Graphics/Sprites/Towers/Tower01_Transparent.png").convert_alpha()  # need to replace with it's own Sprite
+            # need to replace with it's own Sprite
+            self.image = pygame.image.load(
+                "Graphics/Sprites/Towers/Tower01_Transparent.png").convert_alpha()
             pygame.mouse.set_visible(False)
         else:
             if xCoord == None and yCoord == None:  # means that turret doesnt double it's firing speed
                 self.rocketAttack()  # really, this whole method should be an 'update()' method instead as it's doing way more than just rendering - same for all classes
 
             if self.target != None and self.direction != None:  # placed and has target
-                self.image = pygame.image.load("Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction)).convert_alpha()
+                self.image = pygame.image.load(
+                    "Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction)).convert_alpha()
             else:  # placed but no tower
-                self.image = pygame.image.load("Graphics/Sprites/Towers/Tower01.png").convert_alpha()
+                self.image = pygame.image.load(
+                    "Graphics/Sprites/Towers/Tower01.png").convert_alpha()
 
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
@@ -203,8 +214,10 @@ class Rocketeer(pygame.sprite.Sprite):  # need to make derived from turret class
             surface.blit(self.image, (self.x, self.y))
 
             if entitySelected == self:
-                silhouette_Img = pygame.image.load("Graphics/Sprites/Towers/TowerSilhouette.png").convert_alpha()
-                silhouette_Img = pygame.transform.scale(silhouette_Img, (self.size, self.size))
+                silhouette_Img = pygame.image.load(
+                    "Graphics/Sprites/Towers/TowerSilhouette.png").convert_alpha()
+                silhouette_Img = pygame.transform.scale(
+                    silhouette_Img, (self.size, self.size))
                 surface.blit(silhouette_Img, (self.x, self.y))
 
             if not self.hover:

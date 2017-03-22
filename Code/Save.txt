@@ -4,8 +4,8 @@ Main:
 - tower_List = [(1, 386, 363), (1, 130, 293), (1, 276, 618)]
 - waveNo = 3
 - death_List = [[0, 0], [1, 0], [2, 0], [3, 1], [4, 2], [5, 1], [6, 0], [7, 0]]
-Walkabout: 
-Shortcut: 
-Squiggle: 
-BeepBoop: 
-carlostest: 
+Walkabout:
+Shortcut:
+Squiggle:
+BeepBoop:
+carlostest:
