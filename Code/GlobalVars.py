@@ -11,10 +11,15 @@ icon_Img = pygame.image.load(
     "Graphics/Sprites/Towers/Tower01_East.png").convert_alpha()
 pygame.display.set_icon(icon_Img)
 
+pygame.mouse.set_cursor(*pygame.cursors.arrow)
 
 # Assigns the dimensions and the top-left coordinates of the map
 map_Size = ((1760 / 2.2), (1440 / 2.2))
 map_Coords = (20, 140)
+
+# Manages how frequently surface updates ('flips')
+clock = pygame.time.Clock()
+fps = 60
 
 # A list of all grid, creep, tower and rocket objects, respectively
 grid_List = []

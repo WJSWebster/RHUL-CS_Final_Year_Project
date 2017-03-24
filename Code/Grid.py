@@ -9,6 +9,8 @@ map_yellow = (249, 170, 10)
 map_grey = (135, 135, 135)
 path_blue = (0, 191, 255)
 
+map_brown = (154, 108, 16)  # used for when path is tunnelled
+
 
 class Grid:
     def __init__(self, number, xi, yi, colour=map_green):

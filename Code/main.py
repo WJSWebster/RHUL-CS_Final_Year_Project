@@ -9,10 +9,6 @@ import sys  # currently not using math
 # Initialise Pygame
 pygame.init()
 
-# Manages how frequently surface updates ('flips')
-clock = pygame.time.Clock()
-fps = 60
-
 # The location of the mouse cursor on screen and the state of each mouse
 # button (re-assigned each loop)
 mouse = pygame.mouse.get_pos()
@@ -74,8 +70,8 @@ grid_OverlayImg = pygame.image.load(
 grid_OverlayImg = pygame.transform.scale(
     grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
 
-deltaTime = 0
-getTicksLastTime = 0
+# deltaTime = 0  # not used
+# getTicksLastTime = 0 # ""
 
 
 def resetGameState():
@@ -298,7 +294,6 @@ def loadProgress(mapName=mapSelection):
         if ":" in line:
             if mapName == line.split(':')[0]:
                 searching = True
-                print mapName, " searching!"
         if searching:
             if waveSearchOnly:
                 if "waveNo" in line:
@@ -555,7 +550,7 @@ def main():
 
         for i in grid_List:
             i.render()
-        surface.blit(grid_OverlayImg, map_Coords)
+        #surface.blit(grid_OverlayImg, map_Coords)
 
         if playerHealth <= 0:
             healthColour = red

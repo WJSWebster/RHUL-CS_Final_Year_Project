@@ -3,8 +3,6 @@ from main import playerHealth, entitySelected, smallText, red, creepHealthCheck,
 import pygame
 pygame.init()
 
-# note: creep class derives from Pygame 'Sprite' class
-
 
 class Creep():
     def __init__(self, x, y, speciesNo=1):
@@ -102,7 +100,7 @@ class Creep():
                 if self.attackedFrameCount <= 35:
                     displayText("-%s" % (self.attackedDamageAmount), smallText, red,
                                 self.attackedXCoord, (self.attackedYCoord - self.attackedFrameCount))
-                    # figure out a way of making this go transparent over
+                    # TODO figure out a way of making this go transparent over
                     # course of framCount (?)
                     self.attackedFrameCount = self.attackedFrameCount + 1
                 else:
@@ -120,7 +118,7 @@ class Creep():
         creepIndex = creep_List.index(self)
         creep_List.pop(creepIndex)
 
-    def render(self, xCoord=None, yCoord=None):  # , xRendCoord = self.x, yRendCoord = self.y
+    def render(self, xCoord=None, yCoord=None):
         from main import surface
         #global surface
         # http://programarcadegames.com/python_examples/f.php?file=sprite_collect_graphic.py

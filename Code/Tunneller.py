@@ -129,3 +129,5 @@ class Tunneller(Creep):
         # if not shortcutPath[0][0] == shortcutPath[1][0]:  # x coordinates not equal, so need to change direction half way through shortcutPath
         # else if not shortcutPath[0][1] == shortcutPath[1][1]:  # y coords not equal, " "
         # else:  # path between the two is a straight line
+
+        # TODO use A* algorithm or something else from robotics

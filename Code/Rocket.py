@@ -1,5 +1,6 @@
+import math
 import pygame
-# pygame init()
+pygame.init()
 
 
 class Rocket(pygame.sprite.Sprite):

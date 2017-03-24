@@ -72,10 +72,8 @@ class Tower(pygame.sprite.Sprite):
         if not self.attacking:
             if len(creep_List) != 0:
                 self.target = creep_List[0]
-                print "target", self.target
                 return True
             else:
-                print "False"
                 return False
         # note: creep_List[0] means that the target is always the one at the
         # front
