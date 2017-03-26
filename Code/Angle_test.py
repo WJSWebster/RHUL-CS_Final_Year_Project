@@ -183,24 +183,24 @@ def thetaAngle(a, b):
 # 6) Simple Atan Vector Anlge:  #http://stackoverflow.com/a/42258870
 
 def simpleAtan(centre, target):
-    radiansAng = math.atan2(target[1] - centre[1], target[0] - centre[0])
+    radAng = math.atan2(target[1] - centre[1], target[0] - centre[0])
 
-    degreesAng = math.degrees(radiansAng)
+    degAng = math.degrees(radAng)
 
-    if degreesAng < 0:
-        degreesAng = degreesAng + 360
+    if degAng < 0:  # fixes output of degrees between -180 and 180
+        degAng = degAng + 360
 
     # 'rotates' the origin (or 0*) point to backwards 90*
-    degreesAng = degreesAng + 90
+    degAng = degAng + 90
 
     # accounts for previous calibration, so that any angle above 360 (ie,
     # north - origin point) is set to zero and upwards to 90
-    if degreesAng >= 360:
-        degreesAng = degreesAng - 360
+    if degAng >= 360:
+        degAng = degAng - 360
 
     # This then, creates a clockwise angle readout from 0-359.99 in degrees
 
-    return degreesAng
+    return degAng
 ##########################################################################
 
 

@@ -2,6 +2,7 @@ from main import surface, entitySelected, creep_List, firingRocket_Sound, rocket
 from Tower import *
 import pygame
 import math
+
 pygame.init()
 
 
@@ -12,19 +13,19 @@ class Rocketeer(Tower):  # need to make derived from turret class
         Tower.__init__(self, x, y, hover)
 
         self.typeNo = 2
-        self.type, self.damage, self.attackSpeed, self.cost = Tower.getType(
+        self.type, self.damage, self.cooldownTime, self.radius, self.cost = Tower.getType(
             self)
-        self.x, self.y = x, y
+        #self.x, self.y = x, y
 
-        self.size = 28
-        self.hover = hover  # most likely True?
+        #self.size = 28
+        #self.direction = None
+        # self.hover = hover  # most likely True?
 
-        self.attacking = False
-        self.attackFrameCount = 0
-        self.target = None
-
-        self.direction = None
-
+        #self.attacking = False
+        #self.attackFrameCount = 0
+        #self.target = None
+        
+    """
     def getType(self):  # duplicate method to tower, either change parameters or derive from tower class
         typeFile = open("Types.txt", 'r')
 
@@ -37,7 +38,9 @@ class Rocketeer(Tower):  # need to make derived from turret class
             elif parsing and "Damage =" in line:
                 damage = line.split(" = ")[1]
             elif parsing and "Attack Speed =" in line:
-                attackSpeed = line.split(" = ")[1]
+                cooldownTime = line.split(" = ")[1]
+            elif parsing and "Radius =" in line:
+                radius = line.split(" = ")[1]
             elif parsing and "Cost =" in line:
                 cost = line.split(" = ")[1]
             elif "[%s]" % (self.typeNo + 1) in line:
@@ -45,20 +48,18 @@ class Rocketeer(Tower):  # need to make derived from turret class
                 break
 
         typeFile.close()
-        return (typeName, int(damage), int(attackSpeed), int(cost))
+        return (typeName, int(damage), int(cooldownTime), int(radius), int(cost))
+    """
 
     def targetFinder(self):  # duplicate method, should be removed when is derived class of Tower
-        from main import creep_List
-
-        """
-        self.range = 20  # assign in __init__
+        self.radius = 20  # assign in __init__
         range_List = []
         for i in creep_List:
-            # if (i.x within sprite.rect +-self.range) and (i.y within sprite.rect +-self.range):
-                range_List.append(i)
-        for i in range_List:
+            # if (i.x within sprite.rect +-self.range) and (i.y within
+            # sprite.rect +-self.range):
+            range_List.append(i)
+        # for i in range_List:
             # self.target = the one with the highest flagNo & closest to next
-        """
 
         if len(creep_List) != 0:
             self.target = creep_List[0]
@@ -82,54 +83,19 @@ class Rocketeer(Tower):  # need to make derived from turret class
                     self.attacking = True
                     self.attackFrameCount = 1
         else:
-            if self.attackFrameCount == self.attackSpeed:
+            if self.attackFrameCount == self.cooldownTime:
                 self.attacking = False
                 self.target = None
                 self.direction = None
             self.attackFrameCount = self.attackFrameCount + 1
 
     def rotate(self):
-        import math  # this is the second example of this import, need to tidy up
+        import math  # this is the second example of this import, TODO tidy up
 
-        """
-        # Calculating distance between two points using pythagorus:
-        diff = (self.target.x - self.x, self.target.y - self.y)  # https://docs.python.org/2/library/math.html#math.atan2
-        pythagDiff = math.sqrt(diff[0]**2 + diff[1]**2)
-        """
-
-        targetPos = (self.target.x, self.target.y)
         selfPos = (self.x, self.y)
+        targetPos = (self.target.x, self.target.y)
 
-        """
-        yDiff = (self.y, self.target.y)
-        xDiff = (self.x, self.target.x)
-
-        angleVector = self.angle_clockwise(xDiff, yDiff)
-        #angleVector = math.degrees(math.atan(yOpp/xAdj))
-        """
-
-        # http://stackoverflow.com/a/23408996
-        angleVector = math.atan2(
-            selfPos[1], selfPos[0]) - math.atan2(targetPos[1], targetPos[0])
-        angleVector = angleVector * 360 / (2 * math.pi)
-
-        if angleVector < 0:
-            angleVector = angleVector + 360
-
-        print "angleVector: ", angleVector
-
-        if targetPos[0] == selfPos[0]:  # horizontally in line with each other
-            print "targetPos[0] == self.x[0], angleVector: ", angleVector
-            clock.tick(2000)
-
-        """
-
-        #angleVector = math.degrees(math.atan2(yDiff, xDiff))  #http://programarcadegames.com/python_examples/f.php?file=bullets_aimed.py
-        angleVector = math.atan2(self.target.y, self.target.x) - math.atan2(self.y, self.x) #math.degrees()
-        angleVector = angleVector * 360 / (2 * math.pi)
-        if angleVector < 0:
-            angleVector = angleVector + 360
-        """
+        angleVector = self.getAngle(selfPos, targetPos)
 
         print "angleVector: ", angleVector
 
@@ -149,46 +115,6 @@ class Rocketeer(Tower):  # need to make derived from turret class
 
         self.direction = direction
         return angleVector
-
-    """
-    def angle_between(self, point1, point2):  #http://stackoverflow.com/a/31735642
-        import numpy
-
-        angle1 = numpy.arctan2(*point1[0])  # investigate  # *x is power?
-        angle2 = numpy.arctan2(*point2[0])
-
-        angleRad = (angle1 - angle2) % (2 * numpy.pi)
-
-        return numpy.rad2deg(angleRad)  #rand2deg converts radeon to degrees
-    """
-
-    def length(self, v):
-        import math
-
-        return math.sqrt(v[0]**2 + v[1]**2)
-
-    def dot_product(self, v, w):
-        return v[0] * w[0] + v[1] * w[1]
-
-    def determinant(self, v, w):
-        return v[0] * w[1] - v[1] * w[0]
-
-    def inner_angle(self, v, w):
-        import math
-
-        print "\ncreep: ", w
-        cosx = self.dot_product(v, w) / (self.length(v) * self.length(w))
-        rad = math.acos(cosx)  # in radians
-        return rad * 180 / math.pi  # returns degrees
-
-    def angle_clockwise(self, A, B):
-        inner = self.inner_angle(A, B)
-        det = self.determinant(A, B)
-        inner = inner
-        if det < 0:  # this is a property of the det. If the det < 0 then B is clockwise of A
-            return inner
-        else:  # if the det > 0 then A is immediately clockwise of B
-            return (360 - inner)
 
     # only takes in these arguments when rendering again in stats screen
     def render(self, xCoord=None, yCoord=None):

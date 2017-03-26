@@ -64,7 +64,7 @@ class Creep():
         else:  # TODO maybe need to use int() to round values? (as being a float maybe confusing when trying to divide into fractions of a pixel)
             if (flagCoords[self.flagNo][0] + (self.speed / 2)) > self.x > (flagCoords[self.flagNo][0] - (self.speed / 2)) and (flagCoords[self.flagNo][1] + (self.speed / 2)) > self.y > (flagCoords[self.flagNo][1] - (self.speed / 2)):
                 self.flagNo += 1
-                print self, " flagNo = ", self.flagNo
+                # print self, " flagNo = ", self.flagNo  #debug
             else:
                 if not (flagCoords[self.flagNo][0] + (self.speed / 2)) > self.x > (flagCoords[self.flagNo][0] - (self.speed / 2)):
                     if self.x < flagCoords[self.flagNo][0]:

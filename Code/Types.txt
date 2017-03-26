@@ -1,17 +1,26 @@
-[1] Basic:  // should actually be rarer than rocketeer due to splash damage
+[1] Cannon:  // should actually be rarer than rocketeer due to splash damage
 - Damage = 5
-- Attack Speed = 120
+- Cooldown Time = 120
+// This is actually the attack time atm, as Cannon currently attacks again as soon as prev cannonball has landed
+- Radius = 140
 - Cost = 20
 splash damage = ?
 
 [2] Rocketeer:
 - Damage = 5
-- Attack Speed = 120  
-			// research
+- Cooldown Time = 120
+- Radius = 180
 - Cost = 10
 
-[3] Generator:
+[3] Laser:
+- Damage = 2
+- Cooldown Time = 400
+- Radius = 80
+- Cost = 25
+
+[4] Generator:
 - Damage = 0
 // slows down creeps in range
-- Attack Speed = ~~
+- Attack Speed = 5
+- Radius = 60
 - Cost = 35

@@ -1,6 +1,6 @@
 # import __init__
 from __init__ import *
-from GlobalVars import *
+#from GlobalVars import *
 # import statement for Pygame, mathand sys libraries
 import pygame
 import math
@@ -34,29 +34,34 @@ map_yellow = (249, 170, 10)
 map_grey = (135, 135, 135)
 path_blue = (0, 191, 255)
 
-
 # Represents what (single) object is 'highlighted' or selected by the player
 entitySelected = None
+
 # A string of the name of the map the player has chosen
 mapSelection = ""
+
 # A counter incrememnted each game loop, used to time creep spawn rate for
 # each round
 frameCounter = 1
+
 # A list of tuples of the X and Y coordinates for each 'flag' that make up
 # the path creeps must follow on a given map
 flagCoords = []
+
 # A seperate list of tuples used when referencing grid coordinates rather
 # than 'real' X and Y coordinates (such as when loading flag coords from
 # text file)
 tempMapFlagCoords = []
+
 # A tuple representing the starting X and Y coordinates of a creep upon
 # creation
 map_Entrance = ()
+
 # A Boolean limiteding the player from saving an un-tested or unsuccessful
 # map in the editor
 testMapSuccessful = False
 
-# creep_Speed = 1  # temporary - later refer to "Species.txt"
+playerBudget =  20
 
 # Pygame image load function assignment for the main menu background image
 menuBackground = pygame.image.load(
@@ -78,7 +83,7 @@ def resetGameState():
     global playerHealth, playerBudget, waveNo, grid_List, creep_List, tower_List, death_List, frameCounter, mapSelection, flagCoords, map_Entrance, entitySelected, testMapSuccessful
 
     playerHealth = 20
-    # playerBudget = 20
+    playerBudget = 20
     waveNo = 1
 
     grid_List = []
@@ -528,7 +533,8 @@ def main():
     creepCount = 0
 
     basicTowerCost = 20  # TODO these are currently hard-coded, fix?
-    RocketeerTowerCost = 10
+    rocketeerTowerCost = 10
+    laserTowerCost = 25
 
     """
 	# spawning checkpoint flags on mapFlags
@@ -544,20 +550,22 @@ def main():
 
         # print playerBudget  # TODO why is this not updating, when it's updating in other places such as creepHealthCheck()
         # tempPlayerBudget = getPlayerBudget()
-        tempPlayerBudget = playerBudget
+        tempPlayerBudget = playerBudget = 30
 
         surface.blit(background_Img, (0, 0))
 
         for i in grid_List:
             i.render()
-        #surface.blit(grid_OverlayImg, map_Coords)
+        # If grid can be fixed to remove gaps between every other grid
+        # TODO remove grid overlay
+        surface.blit(grid_OverlayImg, map_Coords)
 
         if playerHealth <= 0:
             healthColour = red
         else:
             healthColour = white
 
-        towerHovering = False
+        towerHovering = False  # if any of the towers in tower_List are found to be hovering, dont show tower buy buttons
         for i in tower_List:
             if i.hover:
                 towerHovering = True
@@ -565,13 +573,18 @@ def main():
 
         if not towerHovering:
             if playerBudget >= basicTowerCost:
-                picButton('"Basic" (%s)' % (basicTowerCost), 200, 35,
+                picButton('"Cannon" (%s)' % (basicTowerCost), 200, 35,
                           50, 50, "Towers/Tower01", placeTower, 1)
             else:
                 pass  # picButton greyed out
-            if playerBudget >= RocketeerTowerCost:
-                picButton('"Rocketeer" (%s)' % (RocketeerTowerCost),
+            if playerBudget >= rocketeerTowerCost:
+                picButton('"Rocketeer" (%s)' % (rocketeerTowerCost),
                           300, 35, 50, 50, "Towers/Tower01_East", placeTower, 2)
+            else:
+                pass  # ""
+            if playerBudget >= laserTowerCost:
+                picButton('"Laser" (%s)' % (laserTowerCost),
+                          400, 35, 50, 50, "Towers/Tower03", placeTower, 3)
             else:
                 pass  # ""
         else:
@@ -1258,12 +1271,15 @@ def creepHealthCheck(creep):
 def placeTower(typeNo):
     from Tower import Tower
     from Rocketeer import Rocketeer
+    from Laser import Laser
     global tower_List
 
     if typeNo == 1:
         typeClass = Tower
     elif typeNo == 2:
         typeClass = Rocketeer
+    elif typeNo == 3:
+        typeClass = Laser
     else:
         print "ERROR: typeNo not recognised!"
 

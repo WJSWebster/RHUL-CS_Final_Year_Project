@@ -41,7 +41,7 @@ button_State = 0
 # number the player is currently on for that map (re-assigned if save-data
 # loaded)
 playerHealth = 20
-playerBudget = 20
+#playerBudget = 20
 waveNo = 1
 
 # Tower variables:
