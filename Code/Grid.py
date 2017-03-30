@@ -2,7 +2,7 @@ import random
 import pygame
 pygame.init()
 
-from GlobalVars import map_Coords, surface#, frameCounter
+from GlobalVars import map_Coords, surface  # , frameCounter
 
 
 map_green = (70, 147, 65)
@@ -45,17 +45,16 @@ class Grid:
             elif c > 255:
                 self.randColour[i] = 255
 
-        #print "self.randColour: ", self.randColour
+        # print "self.randColour: ", self.randColour
 
     def checkNeighbours():
         # TODO maybe want to do this in each loop of makeMap
         pass
 
-    def render(self, rand = False):  # , x = self.x, y = self.y, colour = self.colour
+    def render(self, rand=False):  # , x = self.x, y = self.y, colour = self.colour
         #from main import frameCounter
-        #print self.colour, type(self.colour)
-        #print self.randColour, type(self.randColour)
-
+        # print self.colour, type(self.colour)
+        # print self.randColour, type(self.randColour)
         """
         if frameCounter % 1 == 0:
             self.randColour = []

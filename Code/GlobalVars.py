@@ -78,11 +78,14 @@ towerPlacement_Sound = pygame.mixer.Sound(
 firingCannon_Sound = pygame.mixer.Sound(
     "Sounds/Sound_Effects/CannonFiring.wav")
 explosion_Sound = pygame.mixer.Sound("Sounds/Sound_Effects/ExplosionBang.wav")
-firingRocket_Sound = pygame.mixer.Sound("Sounds/Sound_Effects/RocketFiring.wav")
+firingRocket_Sound = pygame.mixer.Sound(
+    "Sounds/Sound_Effects/RocketFiring.wav")
 firingLaser_Sound = pygame.mixer.Sound("Sounds/Sound_Effects/LaserFiring.wav")
-generatorPulsing_Sound = pygame.mixer.Sound("Sounds/Sound_Effects/generatorPulsing.wav")
+generatorPulsing_Sound = pygame.mixer.Sound(
+    "Sounds/Sound_Effects/generatorPulsing.wav")
 
-soundEffects_List = [towerPlacement_Sound, firingCannon_Sound, explosion_Sound, firingRocket_Sound, firingLaser_Sound, generatorPulsing_Sound]
+soundEffects_List = [towerPlacement_Sound, firingCannon_Sound, explosion_Sound,
+                     firingRocket_Sound, firingLaser_Sound, generatorPulsing_Sound]
 
 """
 # cannot assign music object to a variable

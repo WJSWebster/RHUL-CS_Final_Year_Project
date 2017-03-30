@@ -1,5 +1,6 @@
-#from GlobalVars import playerHealth, entitySelected, smallText, red  # , surface, # this is necessay
-#from main import creepHealthCheck, displayText  # refers to methods in main, and as such are required imports from main
+# from GlobalVars import playerHealth, entitySelected, smallText, red  # , surface, # this is necessay
+# from main import creepHealthCheck, displayText  # refers to methods in
+# main, and as such are required imports from main
 
 from GlobalVars import playerHealth, entitySelected, smallText, red  # , surface,
 from main import creepHealthCheck, displayText
@@ -12,7 +13,7 @@ class Creep(pygame.sprite.Sprite):
     def __init__(self, x, y, speciesNo=1):
         # calls to the __init__ constructor in the 'Sprite' parent class
         super(Creep, self).__init__()
-        #pygame.sprite.Sprite.__init__(self)
+        # pygame.sprite.Sprite.__init__(self)
 
         self.x = int(x)
         self.y = int(y)

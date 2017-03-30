@@ -32,10 +32,10 @@ def testLoop():
     ranger_List = []
     ranger_Group = Group()
 
-    boxObj = Box(True)  #makes it a sprite
+    boxObj = Box(True)  # makes it a sprite
     box_List.append(boxObj)
 
-    rangerObj = Ranger(True)  #makes it a sprite
+    rangerObj = Ranger(True)  # makes it a sprite
     ranger_List.append(rangerObj)
 
     if boxObj.sprite:
@@ -43,7 +43,7 @@ def testLoop():
     if rangerObj.sprite:
         ranger.Group.add(rangerObj)
 
-    #pygame.mouse.set_visible(False)
+    # pygame.mouse.set_visible(False)
 
     while True:
         # The location of the mouse cursor on screen and the state of each mouse
@@ -65,7 +65,6 @@ def testLoop():
 
             print "collide_mask(): ", pygame.sprite.collide_mask(rangerObj, boxObj)
             print "spritecollide: ", pygame.sprite.spritecollide(rangerObj, box_Group, False, pygame.sprite.collide_mask)
-
 
         if boxObj.sprite:
             if pygame.sprite.spritecollide(boxObj, circle, False, collide_circle):
@@ -93,8 +92,9 @@ def testLoop():
         # Pygame function to update surface with what has been blit-ed
         pygame.display.flip()
 
+
 class Box(pygame.sprite.Sprite):
-    def __init__(self, sprite = False):
+    def __init__(self, sprite=False):
 
         mouse = pygame.mouse.get_pos()
         click = pygame.mouse.get_pressed()
@@ -106,27 +106,34 @@ class Box(pygame.sprite.Sprite):
         self.sprite = sprite
 
         if self.sprite:
-            self.image = pygame.image.load("Graphics/Protractor.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.size, self.size))
+            self.image = pygame.image.load(
+                "Graphics/Protractor.png").convert_alpha()
+            self.image = pygame.transform.scale(
+                self.image, (self.size, self.size))
             self.rect = self.image.get_rect()
             self.mask = pygame.mask.from_surface(self.image)
         else:
-            self.circle = pygame.draw.rect(surface, red, (self.x, self.y, self.size, self.size))
-            #self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
-            #self.mask = pygame.mask.from_surface(self.circle)  # TypeError: argument 1 must be pygame.Surface, not pygame.Rect
+            self.circle = pygame.draw.rect(
+                surface, red, (self.x, self.y, self.size, self.size))
+            # self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
+            # self.mask = pygame.mask.from_surface(self.circle)  # TypeError:
+            # argument 1 must be pygame.Surface, not pygame.Rect
 
     def render(self):
         if self.sprite:
-            surface.blit(self.image (self.x, self.y))
+            surface.blit(self.image(self.x, self.y))
             self.rect = self.image.get_rect()
             self.mask = pygame.mask.from_surface(self.image)
         else:
-            self.circle = pygame.draw.rect(surface, red, (self.x, self.y, self.size, self.size))
-            #self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
-            #self.mask = pygame.mask.from_surface(self.circle)   # TypeError: argument 1 must be pygame.Surface, not pygame.Rect
+            self.circle = pygame.draw.rect(
+                surface, red, (self.x, self.y, self.size, self.size))
+            # self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
+            # self.mask = pygame.mask.from_surface(self.circle)   # TypeError:
+            # argument 1 must be pygame.Surface, not pygame.Rect
+
 
 class Ranger(pygame.sprite.Sprite):
-    def __init__(self, sprite = False):
+    def __init__(self, sprite=False):
         self.x = canvas_width / 2
         self.y = canvas_height / 2
 
@@ -134,23 +141,30 @@ class Ranger(pygame.sprite.Sprite):
         self.sprite = sprite
 
         if self.sprite:
-            self.image = pygame.image.load("Graphics/Protractor.png").convert_alpha()
-            self.image = pygame.transform.scale(self.image, (self.size, self.size))
+            self.image = pygame.image.load(
+                "Graphics/Protractor.png").convert_alpha()
+            self.image = pygame.transform.scale(
+                self.image, (self.size, self.size))
             self.rect = self.image.get_rect()
             self.mask = pygame.mask.from_surface(self.image)
         else:
-            self.circle = pygame.draw.rect(surface, red, (self.x, self.y, self.size, self.size))
-            #self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
-            #self.mask = pygame.mask.from_surface(self.circle)  # TypeError: argument 1 must be pygame.Surface, not pygame.Rect
+            self.circle = pygame.draw.rect(
+                surface, red, (self.x, self.y, self.size, self.size))
+            # self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
+            # self.mask = pygame.mask.from_surface(self.circle)  # TypeError:
+            # argument 1 must be pygame.Surface, not pygame.Rect
 
     def render(self):
         if self.sprite:
-            surface.blit(self.image (self.x, self.y))
+            surface.blit(self.image(self.x, self.y))
             self.rect = self.image.get_rect()
             self.mask = pygame.mask.from_surface(self.image)
         else:
-            self.circle = pygame.draw.rect(surface, red, (self.x, self.y, self.size, self.size))
-            #self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
-            #self.mask = pygame.mask.from_surface(self.circle)  # TypeError: argument 1 must be pygame.Surface, not pygame.Rect
+            self.circle = pygame.draw.rect(
+                surface, red, (self.x, self.y, self.size, self.size))
+            # self.rect = self.circle.get_rect()  # AttributeError: 'pygame.Rect' object has no attribute 'get_rect'
+            # self.mask = pygame.mask.from_surface(self.circle)  # TypeError:
+            # argument 1 must be pygame.Surface, not pygame.Rect
+
 
 testLoop()

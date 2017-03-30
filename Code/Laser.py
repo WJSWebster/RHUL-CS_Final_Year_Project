@@ -25,10 +25,12 @@ class Laser(Tower):
             self.hover_IMG, (self.size, self.size))
         self.originalImage = pygame.image.load(
             "Graphics/Sprites/Towers/Laser_Turret.png").convert_alpha()
-        self.originalImage = pygame.transform.scale(self.originalImage, (self.size, self.size))
-        self.laserLegs_IMG = pygame.image.load("Graphics/Sprites/Towers/Laser_Legs.png").convert_alpha()
-        self.laserLegs_IMG = pygame.transform.scale(self.laserLegs_IMG, (self.size, self.size))
-
+        self.originalImage = pygame.transform.scale(
+            self.originalImage, (self.size, self.size))
+        self.laserLegs_IMG = pygame.image.load(
+            "Graphics/Sprites/Towers/Laser_Legs.png").convert_alpha()
+        self.laserLegs_IMG = pygame.transform.scale(
+            self.laserLegs_IMG, (self.size, self.size))
 
         self.direction = 0.0  # the angle the turret is facing
         self.rotAmount = 1  # the amount that the turret can rotate every frame
@@ -40,8 +42,10 @@ class Laser(Tower):
 
         self.range_Img = pygame.image.load(
             "Graphics/Sprites/Towers/Range/RangeCircle.png").convert_alpha()  # TODO should be pulled from derived class (Tower)
-        self.range_Img = pygame.transform.scale(self.range_Img, (self.radius, self.radius))
-        self.rangeCirclePos = (self.x - (self.radius / 2), self.y - (self.radius / 2))
+        self.range_Img = pygame.transform.scale(
+            self.range_Img, (self.radius, self.radius))
+        self.rangeCirclePos = (self.x - (self.radius / 2),
+                               self.y - (self.radius / 2))
 
     def targetFinder(self):  # duplicate method, should be removed when is derived class of Tower
         """
@@ -62,8 +66,8 @@ class Laser(Tower):
             print self, "no creeps in creep_List"
             return False
 
-        #self.rangeCircle = pygame.draw.circle(surface, red, rangeCirclePos, self.radius)  # DEBUG
-        #self.rangeCircle
+        # self.rangeCircle = pygame.draw.circle(surface, red, rangeCirclePos, self.radius)  # DEBUG
+        # self.rangeCircle
 
         """
         if len(creep_List) != 0:
@@ -84,12 +88,13 @@ class Laser(Tower):
         self.getTargetAngle()
 
         # if on target or already attacking return True
-        if self.direction - 2 <= self.targetAngle <= self.direction + 1 or self.attacking: # doesnt move if firing
-            self.image = pygame.transform.rotate(self.originalImage, -self.direction)
+        if self.direction - 2 <= self.targetAngle <= self.direction + 1 or self.attacking:  # doesnt move if firing
+            self.image = pygame.transform.rotate(
+                self.originalImage, -self.direction)
             return True
 
         elif self.direction < self.targetAngle:
-            if self.targetAngle - self.direction > 180: # if targetAngle has gone anti-clockwise from 0 to 360
+            if self.targetAngle - self.direction > 180:  # if targetAngle has gone anti-clockwise from 0 to 360
                 print "target anti-clockwise"
                 self.direction -= self.rotAmount
             else:
@@ -105,13 +110,13 @@ class Laser(Tower):
 
             print self.direction
 
-
         if self.direction >= 360:  # not strictly essential
             self.direction -= 360
         elif self.direction < 0:
             self.direction += 360
 
-        self.image = pygame.transform.rotate(self.originalImage, -self.direction) # - amount = rotate clockwise
+        self.image = pygame.transform.rotate(
+            self.originalImage, -self.direction)  # - amount = rotate clockwise
 
         print self.direction
 
@@ -133,7 +138,8 @@ class Laser(Tower):
             laser_Img = pygame.transform.scale(laser_Img, (500, 50))
             """
             if self.laser_Img == None:
-                self.laser_Img = LaserObj(self, self.x, self.y, self.direction, self.size)
+                self.laser_Img = LaserObj(
+                    self, self.x, self.y, self.direction, self.size)
 
             #surface.blit(laser_Img, (laserX, laserY))
             self.laser_Img.attackCheck()
@@ -160,8 +166,10 @@ class Laser(Tower):
                 if entitySelected == self:
                     self.range_Img = pygame.image.load(
                         "Graphics/Sprites/Towers/Range/RangeCircle.png").convert_alpha()
-                    self.range_Img = pygame.transform.scale(self.range_Img, (self.radius, self.radius))
-                    rangeCirclePos = (self.x - (self.radius / 2), self.y - (self.radius / 2))
+                    self.range_Img = pygame.transform.scale(
+                        self.range_Img, (self.radius, self.radius))
+                    rangeCirclePos = (self.x - (self.radius / 2),
+                                      self.y - (self.radius / 2))
                     surface.blit(self.range_Img, rangeCirclePos)
 
                     silhouette_Img = pygame.image.load(

@@ -1,4 +1,4 @@
-#from GlobalVars import *  # this is necessary
+from GlobalVars import surface  # this is necessary
 
 import math
 import pygame
@@ -28,14 +28,17 @@ class Rocket(pygame.sprite.Sprite):
 
         self.velocity = [1, 1]  # Current velocity in pixels per second
         self.acceleration = 1
-        #self.magnitude = ???
+        # self.magnitude = ???
         self.topSpeed = 30  # Max speed in pixels per second
         self.rotAmount = 1
 
-        self.size = [self.owner.size - (self.owner.size / 2), self.owner.size + (self.owner.size / 2)]
+        self.size = [self.owner.size -
+                     (self.owner.size / 2), self.owner.size + (self.owner.size / 2)]
 
-        self.originalImage = pygame.image.load("Graphics/Sprites/Towers/Rockets/Rocket.png").convert_alpha()
-        self.originalImage = pygame.transform.scale(self.originalImage, (self.size[0], self.size[1]))
+        self.originalImage = pygame.image.load(
+            "Graphics/Sprites/Towers/Rockets/Rocket.png").convert_alpha()
+        self.originalImage = pygame.transform.scale(
+            self.originalImage, (self.size[0], self.size[1]))
         self.image = self.originalImage
         self.rect = self.originalImage.get_rect()
         self.mask = pygame.mask.from_surface(self.originalImage)
@@ -46,7 +49,8 @@ class Rocket(pygame.sprite.Sprite):
 
     def rotate(self):
         self.image = self.originalImage
-        newAngle = self.owner.getAngle((self.x, self.y), (self.target.x, self.target.y))
+        newAngle = self.owner.getAngle(
+            (self.x, self.y), (self.target.x, self.target.y))
 
         if self.angle + 5 >= newAngle >= self.angle - 5:
             self.image = self.originalImage
@@ -55,20 +59,17 @@ class Rocket(pygame.sprite.Sprite):
                 self.angle += self.rotAmount
             elif self.angle < newAngle:
                 self.angle -= self.rotAmount
-            #https://www.pygame.org/docs/ref/transform.html#pygame.transform.rotate
-            self.image = pygame.transform.rotate(self.originalImage, self.angle)  # maybe should leave the rotation till after movement? maybe not?
+            # https://www.pygame.org/docs/ref/transform.html#pygame.transform.rotate
+            # maybe should leave the rotation till after movement? maybe not?
+            self.image = pygame.transform.rotate(
+                self.originalImage, self.angle)
 
     def move(self):
-        #self.x += math.cos(self.angle)
-        #self.y += math.sin(self.angle)
+        self.velocity[0] = 15 * math.sin(self.angle)
+        self.velocity[1] = 15 * math.cos(self.angle)
 
-        print "self.size[0] ", self.size[0]
-
-        self.x = self.x + self.size[0] * math.cos(self.angle)
-        self.y = self.y + self.size[1] * math.sin(self.angle)
-
-        self.velocity[0] = 15 * math.cos(self.angle)
-        self.velocity[1] = 15 * math.sin(self.angle)
+        self.x = self.x + self.velocity[0]
+        self.y = self.y + self.velocity[1]
 
     def render(self):
         # TODO if attackFrameCount % ?? == ??:
@@ -79,7 +80,6 @@ class Rocket(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
-
 
         # maybe make mask collide?
         """

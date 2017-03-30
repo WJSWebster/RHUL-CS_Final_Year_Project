@@ -22,19 +22,22 @@ class Tower(pygame.sprite.Sprite):
         self.direction = None
         self.hover = hover   # most likely True?
 
-        self.image = pygame.image.load("Graphics/Sprites/Towers/Cannon_NS_Idol.png").convert_alpha()
+        self.image = pygame.image.load(
+            "Graphics/Sprites/Towers/Cannon_NS_Idol.png").convert_alpha()
         self.rect = self.image.get_rect()
 
         self.range_Img = pygame.image.load(
             "Graphics/Sprites/Towers/Range/RangeCircle.png").convert_alpha()
-        self.range_Img = pygame.transform.scale(self.range_Img, (self.radius, self.radius))
-        self.rangeCirclePos = (self.x - (self.radius / 2), self.y - (self.radius / 2))
-
+        self.range_Img = pygame.transform.scale(
+            self.range_Img, (self.radius, self.radius))
+        self.rangeCirclePos = (self.x - (self.radius / 2),
+                               self.y - (self.radius / 2))
 
         self.attacking = False
         # self.cooldownTime = 120  # dependent on tower
         self.attackFrameCount = 0
-        self.cooldownTimeFrameCount = 0 # currently not used with Cannon but TODO will in future
+        # currently not used with Cannon but TODO will in future
+        self.cooldownTimeFrameCount = 0
         self.target = None
         self.targetXInitial = None  # Canon only
         self.targetYInitial = None  # Canon only
@@ -107,7 +110,7 @@ class Tower(pygame.sprite.Sprite):
                 print "collide2"
         """
 
-        #http://www.cogsci.rpi.edu/~destem/gamedev/pygame.pdf
+        # http://www.cogsci.rpi.edu/~destem/gamedev/pygame.pdf
 
         # wont even be tested unless attacking is False (pointless?)
         """
@@ -163,7 +166,7 @@ class Tower(pygame.sprite.Sprite):
         from main import explosion_Sound
         if not self.attacking:
             if self.targetFinder():
-                #print "Tower target:", self.target  #DEBUG
+                # print "Tower target:", self.target  #DEBUG
 
                 self.targetXInitial, self.targetYInitial = self.target.x, self.target.y
                 self.attacking = True
@@ -218,13 +221,15 @@ class Tower(pygame.sprite.Sprite):
             # pygame.mouse.set_cursor  #
             # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
         else:
+            self.direction = self.rotate()
             # self.cannonBallAttack()
             if self.direction == None:  # placeholder, may replace whole sprite with cannon sprite
-                if self.cooldownTime - 6 <= self.attackFrameCount  <= self.cooldownTime:
+                if self.cooldownTime - 6 <= self.attackFrameCount <= self.cooldownTime:
                     self.image = pygame.image.load(
-                        "Graphics/Sprites/Towers/Cannon_NS_Firing.png").convert_alpha()
+                        "Graphics/Sprites/Towers/Cannon_%s_Firing.png" % (self.direction)).convert_alpha()
                 else:
-                    self.image = pygame.image.load("Graphics/Sprites/Towers/Cannon_NS_Idol.png").convert_alpha()
+                    self.image = pygame.image.load(
+                        "Graphics/Sprites/Towers/Cannon_%s_Idol.png" % (self.direction)).convert_alpha()
                     # TODO implement W & E Cannon
             else:
                 self.image = pygame.image.load(
@@ -255,11 +260,13 @@ class Tower(pygame.sprite.Sprite):
 
     def checkRange(self, tower):
         from main import creep_List
-        ####  - not necessary, but used for illustrative purposes
-        rangeCirclePos = (tower.x - (tower.radius / 2), tower.y - (tower.radius / 2))
+        # - not necessary, but used for illustrative purposes
+        rangeCirclePos = (tower.x - (tower.radius / 2),
+                          tower.y - (tower.radius / 2))
         range_Img = pygame.image.load(
             "Graphics/Sprites/Towers/Range/RangeCircle.png").convert_alpha()  # TODO should be pulled from derived class (Tower)
-        range_Img = pygame.transform.scale(range_Img, (tower.radius, tower.radius))
+        range_Img = pygame.transform.scale(
+            range_Img, (tower.radius, tower.radius))
         #surface.blit(range_Img, rangeCirclePos)
         #pygame.draw.circle(surface, red, rangeCirclePos, tower.radius)
         pygame.draw.circle(self.image, red, self.rect.center, self.radius)
@@ -281,9 +288,33 @@ class Tower(pygame.sprite.Sprite):
         else:
             return False
 
+    def rotate(self):
+
+        selfPos = (self.x, self.y)
+        targetPos = (self.target.x, self.target.y)
+
+        angleVector = self.getAngle(selfPos, targetPos)
+
+        print "angleVector: ", angleVector
+
+        if 315 <= angleVector < 361 or 0 <= angleVector < 45 or 135 <= angleVector < 225:
+            direction = "NS"
+        elif 45 <= angleVector < 135:
+            direction = "E"
+        elif 225 <= angleVector < 315:
+            direction = "W"
+        else:
+            print "ERROR: angle not within any valid direction range (%s)" % (str(angleVector))
+            return None
+
+        print "Direction: ", direction
+
+        self.direction = direction
+        return angleVector
+
     # not actually used by cannon (so should move cannon into it's own class),
     # but is used by Rocketeer and Laser
-    def getAngle(self, centre, target): # http://stackoverflow.com/a/42258870
+    def getAngle(self, centre, target):  # http://stackoverflow.com/a/42258870
         import math
 
         radAng = math.atan2(target[1] - centre[1], target[0] - centre[0])

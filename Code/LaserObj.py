@@ -49,7 +49,8 @@ class LaserObj(pygame.sprite.Sprite):
                 maskCollide_List = pygame.sprite.spritecollide(
                     self, self.collide_Group, False, pygame.sprite.collide_mask)
                 for i in maskCollide_List:  # TODO this attacks all that are in rect if only one is in mask!
-                    i.attacked(self.owner.damage)  # appears to attack all creeps TODO fix!
+                    # appears to attack all creeps TODO fix!
+                    i.attacked(self.owner.damage)
                     print i, "mask collide!"
                     # self.collide_Group.remove(i)
 

@@ -80,8 +80,7 @@ grid_OverlayImg = pygame.image.load(
 grid_OverlayImg = pygame.transform.scale(
     grid_OverlayImg, (int(map_Size[0]), int(map_Size[1])))
 
-# deltaTime = 0  # not used
-# getTicksLastTime = 0 # ""
+# resets all
 
 
 def resetGameState(loadProgress=False):
@@ -97,7 +96,6 @@ def resetGameState(loadProgress=False):
     death_List = []
     if not loadProgress:
         grid_List = []
-
 
         mapSelection = ""
 
@@ -754,6 +752,7 @@ def main():
         # Pygame function to update surface with what has been blit-ed
         pygame.display.flip()
 
+
 """
 def getPlayerBudget(increaseAmount = None):
 	global playerBudget
@@ -762,6 +761,7 @@ def getPlayerBudget(increaseAmount = None):
 	print playerBudget
 	return int(playerBudget)
 """
+
 
 def pauseGame():
     from GlobalVars import canvas_width, canvas_height, soundEffectsVolume, musicVolume, soundEffects_List
@@ -825,6 +825,7 @@ def pauseGame():
         pygame.display.flip()
 
     pygame.mixer.unpause()
+
 
 def checkSelected(mouse, click, curEntity):
     global button_State, entitySelected
@@ -1270,11 +1271,13 @@ def otherDirections(direction):
     if direction == "West":
         return "North", "East", "South"
 
-def getText(msg, x, y, width, height, charLimit = None):
+
+def getText(msg, x, y, width, height, charLimit=None):
     txtString = []
 
     # transparent surface
-    backgroundImg = pygame.image.load("Graphics/Sprites/Buttons/Blue_Highlighted.png").convert_alpha()
+    backgroundImg = pygame.image.load(
+        "Graphics/Sprites/Buttons/Blue_Highlighted.png").convert_alpha()
     backgroundImg = pygame.transform.scale(backgroundImg, (width, height))
 
     wordString = ''
@@ -1284,10 +1287,11 @@ def getText(msg, x, y, width, height, charLimit = None):
         displayText(msg, mediumText, white, (x + (width / 2)), (y + 100))
 
         if len(wordString) > (wordString.find('left shift') + 10):
-            displayText(caps(wordString), mediumText, black, (x + (width / 2)), (y + (height / 2) + 20))
+            displayText(caps(wordString), mediumText, black,
+                        (x + (width / 2)), (y + (height / 2) + 20))
         else:
-            displayText(wordString, mediumText, black, (x + (width / 2)), (y + (height / 2) + 20))
-
+            displayText(wordString, mediumText, black,
+                        (x + (width / 2)), (y + (height / 2) + 20))
 
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -1312,20 +1316,23 @@ def getText(msg, x, y, width, height, charLimit = None):
         """
         #displayText(wordString, largeText, black, (x + (width / 2)), (y + (height / 2) + 20))
 
-        #text = font.render(wordString, True, black, (x + (width / 2), ((y + (height / 2) + 20))
+        # text = font.render(wordString, True, black, (x + (width / 2), ((y + (height / 2) + 20))
         #surface.blit(text(text, (x + 20, y + 20)))
 
         clock.tick(fps)
         pygame.display.flip()
 
+
 def caps(message):
     for i in range(message.count('left shift')):
         shift_loc = message.find('left shift')
         if len(message) > 11:
-            message =  message[:shift_loc+9] + message[shift_loc+10].upper() + message[shift_loc+11]
+            message = message[:shift_loc + 9] + \
+                message[shift_loc + 10].upper() + message[shift_loc + 11]
         else:
-            message =  message[:shift_loc+9] + message[shift_loc+10].upper()
+            message = message[:shift_loc + 9] + message[shift_loc + 10].upper()
     return(message.replace('left shif', ''))
+
 
 def saveMap():
     global tempMapFlagCoords
@@ -1335,8 +1342,10 @@ def saveMap():
     while True:
         also = "T"
 
-        savedMapName = getText("Type in the name of this map: ", 200, 200, 800, 300)
-        savedMapName = raw_input("Alternatively, you can type in the name of this map here: ")
+        savedMapName = getText(
+            "Type in the name of this map: ", 200, 200, 800, 300)
+        savedMapName = raw_input(
+            "Alternatively, you can type in the name of this map here: ")
 
         savedMapName = caps(savedMapName)
         print "temp mapname is :", savedMapName
