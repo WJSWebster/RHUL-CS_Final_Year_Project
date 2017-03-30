@@ -1,4 +1,5 @@
-from main import surface, entitySelected, creep_List, explosion_Sound, red
+from GlobalVars import surface, entitySelected, explosion_Sound, red, creep_List
+#from main import creep_List
 # import Creep
 import pygame
 pygame.init()
@@ -21,6 +22,15 @@ class Tower(pygame.sprite.Sprite):
         self.direction = None
         self.hover = hover   # most likely True?
 
+        self.image = pygame.image.load("Graphics/Sprites/Towers/Cannon_NS_Idol.png").convert_alpha()
+        self.rect = self.image.get_rect()
+
+        self.range_Img = pygame.image.load(
+            "Graphics/Sprites/Towers/Range/RangeCircle.png").convert_alpha()
+        self.range_Img = pygame.transform.scale(self.range_Img, (self.radius, self.radius))
+        self.rangeCirclePos = (self.x - (self.radius / 2), self.y - (self.radius / 2))
+
+
         self.attacking = False
         # self.cooldownTime = 120  # dependent on tower
         self.attackFrameCount = 0
@@ -29,9 +39,9 @@ class Tower(pygame.sprite.Sprite):
         self.targetXInitial = None  # Canon only
         self.targetYInitial = None  # Canon only
         self.shadow_Img = pygame.image.load(
-            "Graphics/Sprites/Other/Shadow.png").convert_alpha()
+            "Graphics/Sprites/Towers/Cannon/Shadow.png").convert_alpha()
         self.cannonBall_Img = pygame.transform.scale(pygame.image.load(
-            "Graphics/Sprites/Other/CannonBall.png").convert_alpha(), (self.size, self.size))
+            "Graphics/Sprites/Towers/Cannon/CannonBall.png").convert_alpha(), (self.size, self.size))
         # self.explosion_Img = pygame.transform.scale(pygame.image.load("Graphics/Sprites/Other/Explosion.png").convert_alpha(), (self.size, self.size).convert())
 
         self.radius_Img = pygame.image.load(
@@ -72,24 +82,53 @@ class Tower(pygame.sprite.Sprite):
         return (typeName, int(damage), int(cooldownTime), int(radius), int(cost))
 
     def targetFinder(self):
-        from main import creep_List
+        #from main import creep_List
 
         #self.radius_Img = pygame.draw.circle(surface, red, (self.x, self.y), self.radius)
-        self.radius_Img = pygame.transform.scale(
-            self.radius_Img, (self.radius, self.radius))
-        """pygame.mask.from_threshold(self.radius_Img, (0, 255, 255),
-                                   (0, 0, 0, 255), None, 1)
+        """
+        target_List = pygame.sprite.spritecollide(self.radius_Img, creep_List, False, pygame.sprite.collide_circle
+        print "target_List: ", target_List
         """
 
-        """if pygame.mask.from_threshold(self.radius_Img, (0, 255, 255),
-                                      (0, 0, 0, 255), None, 1).contains(i.rect):
+        """self.radius_Img = (pygame.mask.from_threshold(self.radius_Img, (0, 255, 255),
+                               (0, 0, 0, 255), None, 1)
         """
+        """
+        for i in creep_List:
+            if pygame.sprite.collide_mask(self.radius_Img, i):
+                print "collide"
+        """
+
+        """
+        self.radius_Img = pygame.mask.from_surface(self.radius_Img)
+
+        for i in creep_List:
+            if pygame.mask.from_surface(self.radius_Img).colliderect(i.rect):
+                print "collide2"
+        """
+
+        #http://www.cogsci.rpi.edu/~destem/gamedev/pygame.pdf
 
         # wont even be tested unless attacking is False (pointless?)
+        """
         if not self.attacking:
-            if len(creep_List) != 0:
-                self.target = creep_List[0]
-                """
+            target_List = self.checkRange(self)
+            if target_List != False:
+                self.target = target_List[0]
+                return True
+            else:
+                return False
+            """
+        print "targetFinder: creep_List: ", creep_List
+
+        if len(creep_List) != 0:
+            self.target = creep_List[0]
+            print "Tower target found!: ", self.target
+            return True
+        else:
+            print "no creep found"
+            return False
+            """
                 for i in creep_List:
                     if hasattr(i, 'image'):
                         collision = pygame.sprite.collide_mask(
@@ -107,14 +146,14 @@ class Tower(pygame.sprite.Sprite):
 
                 else:  # no creeps in range
                     return False
-                """
-                return True
-            else:
-                return False
+
+            return True
+        else:
+            return False
         # note: creep_List[0] means that the target is always the one at the
         # front TODO add turret behaviour options (ie, target strongest)
 
-        """
+
 		# need a section to account for creep speed, time of projectile and possible corners
 		"""
 
@@ -174,18 +213,22 @@ class Tower(pygame.sprite.Sprite):
     def render(self, xCoord=None, yCoord=None):
         if self.hover:
             self.image = pygame.image.load(
-                "Graphics/Sprites/Towers/Tower01_Transparent.png").convert_alpha()
+                "Graphics/Sprites/Towers/Cannon_Transparent.png").convert_alpha()
             pygame.mouse.set_visible(False)
             # pygame.mouse.set_cursor  #
             # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
         else:
             # self.cannonBallAttack()
             if self.direction == None:  # placeholder, may replace whole sprite with cannon sprite
-                self.image = pygame.image.load(
-                    "Graphics/Sprites/Towers/Tower01.png").convert_alpha()
+                if self.cooldownTime - 6 <= self.attackFrameCount  <= self.cooldownTime:
+                    self.image = pygame.image.load(
+                        "Graphics/Sprites/Towers/Cannon_NS_Firing.png").convert_alpha()
+                else:
+                    self.image = pygame.image.load("Graphics/Sprites/Towers/Cannon_NS_Idol.png").convert_alpha()
+                    # TODO implement W & E Cannon
             else:
                 self.image = pygame.image.load(
-                    "Graphics/Sprites/Towers/Tower01_%s.png" % (self.direction)).convert_alpha()
+                    "Graphics/Sprites/Towers/Cannon_%s_Idol.png" % (self.direction)).convert_alpha()
 
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
@@ -193,6 +236,8 @@ class Tower(pygame.sprite.Sprite):
             surface.blit(self.image, (self.x, self.y))
 
             if entitySelected == self:
+                surface.blit(self.range_Img, self.rangeCirclePos)
+
                 silhouette_Img = pygame.image.load(
                     "Graphics/Sprites/Towers/TowerSilhouette.png").convert_alpha()
                 silhouette_Img = pygame.transform.scale(
@@ -207,6 +252,34 @@ class Tower(pygame.sprite.Sprite):
 
         if self.aftermathBool:
             self.cannonBallAftermath()
+
+    def checkRange(self, tower):
+        from main import creep_List
+        ####  - not necessary, but used for illustrative purposes
+        rangeCirclePos = (tower.x - (tower.radius / 2), tower.y - (tower.radius / 2))
+        range_Img = pygame.image.load(
+            "Graphics/Sprites/Towers/Range/RangeCircle.png").convert_alpha()  # TODO should be pulled from derived class (Tower)
+        range_Img = pygame.transform.scale(range_Img, (tower.radius, tower.radius))
+        #surface.blit(range_Img, rangeCirclePos)
+        #pygame.draw.circle(surface, red, rangeCirclePos, tower.radius)
+        pygame.draw.circle(self.image, red, self.rect.center, self.radius)
+        #########################################
+
+        target_List = []
+
+        if len(creep_List) > 0:
+            for i in creep_List:
+                if pygame.sprite.collide_circle(tower, i):
+                    print i, "is in range of tower ", tower
+                    target_List.append(i)
+            else:
+                print "no creeps detected!"
+        else:
+            print "creep list is empty"
+        if len(target_List) > 0:
+            return target_List
+        else:
+            return False
 
     # not actually used by cannon (so should move cannon into it's own class),
     # but is used by Rocketeer and Laser

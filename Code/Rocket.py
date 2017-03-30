@@ -1,3 +1,5 @@
+#from GlobalVars import *  # this is necessary
+
 import math
 import pygame
 pygame.init()
@@ -5,7 +7,7 @@ pygame.init()
 
 class Rocket(pygame.sprite.Sprite):
     # damage could probably be gotten from rocketTurret global
-    def __init__(self, owner, target, angle, damage):
+    def __init__(self, owner, target, direction, damage):
 
         super(Rocket, self).__init__()
         pygame.sprite.Sprite.__init__(self)
@@ -13,42 +15,82 @@ class Rocket(pygame.sprite.Sprite):
 
         self.owner = owner
         self.target = target
-        self.angle = angle
+        self.direction = direction
+        if self.direction == "North":
+            self.angle = 0
+        elif self.direction == "East":
+            self.angle = 90
+        elif self.direction == "South":
+            self.angle = 180
+        elif self.direction == "West":
+            self.angle = 270
         self.damage = damage
 
-        self.velocity = 0  # Current velocity in pixels per second
-        # Pixels per second (Also applies as so called deceleration AKA
-        # friction)
+        self.velocity = [1, 1]  # Current velocity in pixels per second
         self.acceleration = 1
+        #self.magnitude = ???
         self.topSpeed = 30  # Max speed in pixels per second
+        self.rotAmount = 1
 
-        self.image = pygame.image.load("Graphics/Sprites/Other/Rocket.png")
+        self.size = [self.owner.size - (self.owner.size / 2), self.owner.size + (self.owner.size / 2)]
 
-        ###############################
-        self.rect = self.image.get_rect()
-        ###############################
+        self.originalImage = pygame.image.load("Graphics/Sprites/Towers/Rockets/Rocket.png").convert_alpha()
+        self.originalImage = pygame.transform.scale(self.originalImage, (self.size[0], self.size[1]))
+        self.image = self.originalImage
+        self.rect = self.originalImage.get_rect()
+        self.mask = pygame.mask.from_surface(self.originalImage)
 
         self.size = self.owner.size / 2  # half the size of a Rocketeer tower
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.x, self.y = self.owner.x, self.owner.y  # + 5, + 6  # or something
 
     def rotate(self):
-        # pygame.transform.rotate(surface?, angle)
-        # #https://www.pygame.org/docs/ref/transform.html#pygame.transform.rotate
-        # https://docs.python.org/2/library/math.html#math.atan2
-        self.angle = (self.target.x - self.x, self.target.y - self.y)
+        self.image = self.originalImage
+        newAngle = self.owner.getAngle((self.x, self.y), (self.target.x, self.target.y))
+
+        if self.angle + 5 >= newAngle >= self.angle - 5:
+            self.image = self.originalImage
+        else:
+            if self.angle > newAngle:
+                self.angle += self.rotAmount
+            elif self.angle < newAngle:
+                self.angle -= self.rotAmount
+            #https://www.pygame.org/docs/ref/transform.html#pygame.transform.rotate
+            self.image = pygame.transform.rotate(self.originalImage, self.angle)  # maybe should leave the rotation till after movement? maybe not?
+
+    def move(self):
+        #self.x += math.cos(self.angle)
+        #self.y += math.sin(self.angle)
+
+        print "self.size[0] ", self.size[0]
+
+        self.x = self.x + self.size[0] * math.cos(self.angle)
+        self.y = self.y + self.size[1] * math.sin(self.angle)
+
+        self.velocity[0] = 15 * math.cos(self.angle)
+        self.velocity[1] = 15 * math.sin(self.angle)
 
     def render(self):
-        # if rotateFrame = frameCounter:
+        # TODO if attackFrameCount % ?? == ??:
         self.rotate()
-        # http://stackoverflow.com/questions/6775897/pygame-making-a-sprite-face-the-mouse
-        rotatedImage = pygame.transform.rotate(self.image, self.angle)
+        self.move()
 
-        if not pygame.sprite.collide_rect(self.rect, self.target.rect):
+        surface.blit(self.image, (self.x, self.y))
+
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+
+
+        # maybe make mask collide?
+        """
+        if not pygame.sprite.collide_rect(self, self.target):
             surface.blit(self.image, (self.x, self.y))
+            print "not colliding ---"
         else:
+            print "=== colliding ==="
             self.target.attacked(self.damage)
-            # play explosion Sound
-            # play aftermath animation
-            rocketIndex = rocket_List.index(self)
-            rocket_List.pop(rocketIndex)
+            # TODO play explosion Sound
+            # TODO play aftermath animation
+            rocketIndex = self.owner.rocket_List.index(self)
+            self.owner.rocket_List.pop(rocketIndex)
+        """

@@ -8,3 +8,5 @@ from Tunneller import *
 from Tower import *
 from Rocketeer import *
 from Rocket import *
+from Laser import *
+from LaserObj import *

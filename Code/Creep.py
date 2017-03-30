@@ -1,14 +1,18 @@
-from main import playerHealth, entitySelected, smallText, red, creepHealthCheck, displayText  # , surface,
-#import main
+#from GlobalVars import playerHealth, entitySelected, smallText, red  # , surface, # this is necessay
+#from main import creepHealthCheck, displayText  # refers to methods in main, and as such are required imports from main
+
+from GlobalVars import playerHealth, entitySelected, smallText, red  # , surface,
+from main import creepHealthCheck, displayText
+
 import pygame
 pygame.init()
 
 
-class Creep():
+class Creep(pygame.sprite.Sprite):
     def __init__(self, x, y, speciesNo=1):
         # calls to the __init__ constructor in the 'Sprite' parent class
-        #super(Creep, self).__init__()
-        # pygame.sprite.Sprite.__init__(self)
+        super(Creep, self).__init__()
+        #pygame.sprite.Sprite.__init__(self)
 
         self.x = int(x)
         self.y = int(y)
@@ -21,7 +25,14 @@ class Creep():
 
         self.species, self.health, self.damage, self.speed, self.cost = self.getSpecies(
             speciesNo)
-        # need to move 'creep_speed = 1' here
+
+        self.image = pygame.image.load(
+            "Graphics/Sprites/Creeps/%s_West.png" % (self.species)).convert_alpha()
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.rect = self.image.get_rect()
+        self.mask = pygame.mask.from_surface(self.image)
+
+        self.radius = self.size - 10
 
         # only for attackedText function
         self.attackedFrameCount = None
@@ -89,6 +100,7 @@ class Creep():
         self.attackedText(damage)
         creepHealthCheck(self)
 
+    # make class so multiple damageText objects can exist at once
     def attackedText(self, damageAmount=None):
         if damageAmount != None:  # attackedText just initialised
             self.attackedFrameCount = 0
@@ -113,6 +125,8 @@ class Creep():
         #from main import creep_List
         global playerHealth, creep_List
 
+        print "creep attacking!"
+
         playerHealth = playerHealth - self.damage
 
         creepIndex = creep_List.index(self)
@@ -121,12 +135,28 @@ class Creep():
     def render(self, xCoord=None, yCoord=None):
         from main import surface
         #global surface
+
+        #############################
+        """
+        # only used in debug as part of laser CollisionTest.py
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # if window close button pressed
+                pygame_quit()
+        mouse = pygame.mouse.get_pos()
+        self.x = mouse[0]
+        self.y = mouse[1]
+        self.direction = "West"
+        """
+        #############################
+
         # http://programarcadegames.com/python_examples/f.php?file=sprite_collect_graphic.py
         self.image = pygame.image.load(
             "Graphics/Sprites/Creeps/%s_%s.png" % (self.species, self.direction)).convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.rect = self.image.get_rect()
-        # self.draw(surface)
+        self.mask = pygame.mask.from_surface(self.image)
+
+        #pygame.draw.circle(self.image, red, self.rect.center, self.radius)
 
         if xCoord == None and yCoord == None:  # rendering on game map
             surface.blit(self.image, (self.x, self.y))
