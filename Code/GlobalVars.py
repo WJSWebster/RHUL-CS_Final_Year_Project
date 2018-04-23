@@ -56,6 +56,7 @@ smallText = pygame.font.SysFont('ubuntu', 20)  # 'ubuntu'
 # 3 element tuples (representing RGB values respectively) of commonly used
 # colours in the program
 white = (255, 255, 255)
+grey = (131, 131, 131)
 black = (0, 0, 0)
 green = (0, 200, 0)
 bright_green = (0, 255, 0)

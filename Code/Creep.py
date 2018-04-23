@@ -70,15 +70,18 @@ class Creep(pygame.sprite.Sprite):
             return (species, int(health), int(damage), int(speed), int(cost))
 
     def creepPathFollow(self, flagCoords):
+        variance = self.size / 4
+
         if self.flagNo == len(flagCoords):
             print self, ": Complete"
             self.pathComplete = True
         else:  # TODO maybe need to use int() to round values? (as being a float maybe confusing when trying to divide into fractions of a pixel)
-            if (flagCoords[self.flagNo][0] + (self.speed / 2)) > self.x > (flagCoords[self.flagNo][0] - (self.speed / 2)) and (flagCoords[self.flagNo][1] + (self.speed / 2)) > self.y > (flagCoords[self.flagNo][1] - (self.speed / 2)):
+            print self.flagNo
+            if (flagCoords[self.flagNo][0] + (variance)) > self.x > (flagCoords[self.flagNo][0] - (variance)) and (flagCoords[self.flagNo][1] + (variance)) > self.y > (flagCoords[self.flagNo][1] - (variance)):
                 self.flagNo += 1
                 # print self, " flagNo = ", self.flagNo  #debug
             else:
-                if not (flagCoords[self.flagNo][0] + (self.speed / 2)) > self.x > (flagCoords[self.flagNo][0] - (self.speed / 2)):
+                if not (flagCoords[self.flagNo][0] + (variance)) > self.x > (flagCoords[self.flagNo][0] - (variance)):
                     if self.x < flagCoords[self.flagNo][0]:
                         self.direction = 'East'
                         self.x += self.speed
@@ -87,8 +90,8 @@ class Creep(pygame.sprite.Sprite):
                         self.direction = 'West'
                         self.x -= self.speed
                         # print self.x, " > ", flagCoords[flagNo][0]
-                elif not (flagCoords[self.flagNo][1] + (self.speed / 2)) > self.y > (flagCoords[self.flagNo][1] - (self.speed / 2)):
-                    if self.y < flagCoords[self.flagNo][1] + (self.speed / 2):
+                elif not (flagCoords[self.flagNo][1] + (variance)) > self.y > (flagCoords[self.flagNo][1] - (variance)):
+                    if self.y < flagCoords[self.flagNo][1] + (variance):
                         self.direction = 'South'
                         self.y += self.speed
                     elif self.y > flagCoords[self.flagNo][1]:
@@ -123,15 +126,11 @@ class Creep(pygame.sprite.Sprite):
                     self.attackedDamageAmount = None
 
     def attackPlayer(self):
-        #from main import creep_List
+        from GlobalVars import creep_List
         global playerHealth, creep_List
 
-        print "creep attacking!"
-
         playerHealth = playerHealth - self.damage
-
-        creepIndex = creep_List.index(self)
-        creep_List.pop(creepIndex)
+        creep_List.remove(self)
 
     def render(self, xCoord=None, yCoord=None):
         from main import surface

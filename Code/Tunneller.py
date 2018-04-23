@@ -131,5 +131,4 @@ class Tunneller(Creep):
         # else:  # path between the two is a straight line
 
         # TODO use A* algorithm or something else from robotics
-        # TODO
         # http://www.laurentluce.com/posts/solving-mazes-using-python-simple-recursivity-and-a-search/

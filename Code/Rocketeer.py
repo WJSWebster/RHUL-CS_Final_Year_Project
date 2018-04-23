@@ -54,7 +54,6 @@ class Rocketeer(Tower):  # need to make derived from turret class
 
     def rocketAttack(self):  # could also be joined to attack method once class is derived
         from Rocket import Rocket
-
         if not self.attacking:
             if self.targetFinder():
                 self.rotate()
@@ -75,9 +74,7 @@ class Rocketeer(Tower):  # need to make derived from turret class
         self.attackFrameCount = self.attackFrameCount + 1
         if len(self.rocket_List) > 0:
             for i in self.rocket_List:
-                i.rotate()
-                i.move()
-                i.render()
+                    i.render()
 
     def rotate(self):
 

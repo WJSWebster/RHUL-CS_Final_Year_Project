@@ -1,0 +1,39 @@
+saveProgress method (old code):
+
+	"""
+	for i, line in enumerate(lines):
+		if ":" in line:
+			if mapSelection == line.split(':')[0]:
+				lines.insert(i + 1, writeLine)
+				break
+	"""
+
+	"""
+	if i < len(lines):
+		if ":" in lines[i + 1]:
+			print "there is nothing saved for this mapsave -- writing..."
+
+			#lines = lines.replace("%s: \n","%s: \n**test**\n")
+			next_line = next(saveFile)
+
+			saveFile.write('**TEST**\n')
+			saveFile.write(writeLine)
+			lines.insert(i, writeLine)
+
+		else:
+			print "overwriting mapsave..."
+			#saveFile.write(writeLine)
+			lines.insert(i, writeLine)
+	else:
+		print "overwriting mapsave..."
+		#saveFile.write(writeLine)
+		lines.insert(i, writeLine)
+	"""
+			#saveFile.write(next_line)
+
+			#break
+		#print i, "=", writableLine,"?", i == writableLine
+		#if i == writableLine:
+			#print "hello"
+			#saveFile.write(writeline)
+			#saveFile.write("test")

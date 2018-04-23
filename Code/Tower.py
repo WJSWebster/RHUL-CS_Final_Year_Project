@@ -1,4 +1,4 @@
-from GlobalVars import surface, entitySelected, explosion_Sound, red, creep_List
+from GlobalVars import surface, entitySelected, firingCannon_Sound, explosion_Sound, red, creep_List
 #from main import creep_List
 # import Creep
 import pygame
@@ -55,6 +55,8 @@ class Tower(pygame.sprite.Sprite):
         self.aftermathXCoord = None
         self.aftermathYCoord = None
         self.aftermathBool = False
+
+        self.facing = "NS"
 
     def getType(self):
         typeFile = open("Types.txt", 'r')
@@ -161,9 +163,9 @@ class Tower(pygame.sprite.Sprite):
 		"""
 
     def cannonBallAttack(self):
+        from main import explosion_Sound
         # TODO look into this and other examples of redundent(mulitple) imports
         # of same variables
-        from main import explosion_Sound
         if not self.attacking:
             if self.targetFinder():
                 # print "Tower target:", self.target  #DEBUG
@@ -174,7 +176,7 @@ class Tower(pygame.sprite.Sprite):
                 self.attackFrameCount = 1
         else:
             if self.attackFrameCount == self.cooldownTime:  # attack frame
-                pygame.mixer.Sound.play(explosion_Sound)
+                pygame.mixer.Sound.play(firingCannon_Sound)
                 self.target.attacked(self.damage)
                 self.cannonBallAftermath(
                     self.targetXInitial, self.targetYInitial)
@@ -200,6 +202,7 @@ class Tower(pygame.sprite.Sprite):
             self.aftermathXCoord = aftermathXCoord
             self.aftermathYCoord = aftermathYCoord
             self.aftermathBool = True
+            pygame.mixer.Sound.play(explosion_Sound)
         if self.aftermathFrameCount <= 34:  # during aftermath explosion  # 35 = self.aftermathFrameCount * 5
             explosion_Img = pygame.image.load(
                 "Graphics/Sprites/Explosions/Explosion_%s.png" % (int(self.aftermathFrameCount / 5))).convert_alpha()
@@ -221,19 +224,36 @@ class Tower(pygame.sprite.Sprite):
             # pygame.mouse.set_cursor  #
             # https://www.pygame.org/docs/ref/mouse.html#pygame.mouse.set_cursor
         else:
-            self.direction = self.rotate()
-            # self.cannonBallAttack()
-            if self.direction == None:  # placeholder, may replace whole sprite with cannon sprite
+            """
+            if self.target != None or :
+                self.direction = self.rotate()
+            """
+                #self.cannonBallAttack()
+            if self.attacking:  # placeholder, may replace whole sprite with cannon sprite
+                self.direction = self.rotate()
+
+
+                if 45 < self.direction <= 135:
+                    self.facing = "E"
+                elif 225 < self.direction <= 315:
+                    self.facing = "W"
+                else:
+                    self.facing = "NS"
+
+
                 if self.cooldownTime - 6 <= self.attackFrameCount <= self.cooldownTime:
                     self.image = pygame.image.load(
-                        "Graphics/Sprites/Towers/Cannon_%s_Firing.png" % (self.direction)).convert_alpha()
+                        "Graphics/Sprites/Towers/Cannon_%s_Firing.png" % (self.facing)).convert_alpha()
                 else:
                     self.image = pygame.image.load(
-                        "Graphics/Sprites/Towers/Cannon_%s_Idol.png" % (self.direction)).convert_alpha()
+                        "Graphics/Sprites/Towers/Cannon_%s_Idol.png" % (self.facing)).convert_alpha()
                     # TODO implement W & E Cannon
             else:
-                self.image = pygame.image.load(
-                    "Graphics/Sprites/Towers/Cannon_%s_Idol.png" % (self.direction)).convert_alpha()
+                if self.facing != None:
+                    self.image = pygame.image.load(
+                    "Graphics/Sprites/Towers/Cannon_%s_Idol.png" % (self.facing)).convert_alpha()
+                else:
+                    self.image = pygame.image.load("Graphics/Sprites/Towers/Cannon_NS_Idol.png").convert_alpha()
 
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
 
@@ -269,7 +289,7 @@ class Tower(pygame.sprite.Sprite):
             range_Img, (tower.radius, tower.radius))
         #surface.blit(range_Img, rangeCirclePos)
         #pygame.draw.circle(surface, red, rangeCirclePos, tower.radius)
-        pygame.draw.circle(self.image, red, self.rect.center, self.radius)
+        #pygame.draw.circle(self.image, red, self.rect.center, self.radius)
         #########################################
 
         target_List = []
@@ -312,8 +332,7 @@ class Tower(pygame.sprite.Sprite):
         self.direction = direction
         return angleVector
 
-    # not actually used by cannon (so should move cannon into it's own class),
-    # but is used by Rocketeer and Laser
+
     def getAngle(self, centre, target):  # http://stackoverflow.com/a/42258870
         import math
 

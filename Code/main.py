@@ -138,9 +138,9 @@ def button(msg, x, y, w, h, colour, action=None, mapName=None):  # change variab
     click = pygame.mouse.get_pressed()   # " "
 
     """
-	if click[0] == 1:
-		print "mouse position: ", mouse
-	"""
+    if click[0] == 1:
+        print "mouse position: ", mouse
+    """
 
     # if msg != "Save" and msg != "Delete": # and msg != "delete"
     if x + w > mouse[0] > x and y + h > mouse[1] > y:
@@ -182,16 +182,29 @@ def button(msg, x, y, w, h, colour, action=None, mapName=None):  # change variab
     displayText(msg, smallText, white, (x + (w / 2)), (y + (h / 2)))
 
 
-def picButton(msg, x, y, w, h, image, action, arguments=None):
+def picButton(msg, x, y, w, h, image, action = None, arguments = None):
     global button_State
     mouse = pygame.mouse.get_pos()   # needs to be re-defined every loop to update
     click = pygame.mouse.get_pressed()   # " "
 
     buttonImage = pygame.image.load(
         "Graphics/Sprites/%s.png" % (image)).convert_alpha()
+    buttonImage = pygame.transform.scale(buttonImage, (w, h))
+
+    if "Down" in msg:
+        buttonImage = pygame.transform.rotate(buttonImage, 180)
+
     if x + w > mouse[0] > x and y + h > mouse[1] > y:  # highlighted
         if click[0] == 1:  # clicked
             button_State = 1
+
+            if "Volume" in msg:
+                print "Volume change!"
+                return True
+
+            buttonImage = pygame.transform.scale(buttonImage, (w, h))
+            surface.blit(buttonImage, (x, y))
+
         if button_State == 1 and click[0] == 0:
             button_State = 0
 
@@ -200,17 +213,23 @@ def picButton(msg, x, y, w, h, image, action, arguments=None):
             elif msg == "Unpause":
                 gamePaused = False
 
-            if arguments != None:
-                print "argument == ", arguments
-                action(arguments)
+            if action != None:
+                if arguments != None:
+                    print "argument == ", arguments
+                    action(arguments)
+                else:
+                    print "no arguments for '%s' picButton" % (msg)
+                    action()
             else:
-                print "no arguments"
-                action()
+                print "no action for '%s' picButton" % (msg)
+
 
     buttonImage = pygame.transform.scale(buttonImage, (w, h))
     surface.blit(buttonImage, (x, y))
 
-    displayText(msg, smallText, white, (x + (w / 2)), (y + (h + (h / 2))))
+    if "Volume" not in msg:
+        displayText(msg, smallText, white, (x + (w / 2)), (y + (h + (h / 2))))
+    return False
 
 
 def saveProgress():
@@ -302,7 +321,7 @@ def loadProgress(mapName=mapSelection):
         # no need to reference globals, as immediately returning waveNo
     else:  # if loading progress upon entering a map
         waveSearchOnly = False
-        print "\nwe're searching for data on ", mapSelection
+        #print "\nwe're searching for data on ", mapSelection
 
     # shouldnt be needed as already called when intro_menu reached
     resetGameState(True)
@@ -627,18 +646,18 @@ def main():
 
             if not towerHovering:
                 if playerBudget >= basicTowerCost:
-                    picButton('"Cannon" (%s)' % (basicTowerCost), 200, 35,
+                    picButton('"Cannon"\n(%s)' % (basicTowerCost), 200, 30,
                               50, 50, "Towers/Cannon_NS_Idol", placeTower, 1)
                 else:
                     pass  # picButton greyed out
                 if playerBudget >= rocketeerTowerCost:
-                    picButton('"Rocketeer" (%s)' % (rocketeerTowerCost),
-                              300, 35, 50, 50, "Towers/Rocketeer_East", placeTower, 2)
+                    picButton('"Rocketeer"\n(%s)' % (rocketeerTowerCost),
+                              315, 30, 50, 50, "Towers/Rocketeer_East", placeTower, 2)
                 else:
                     pass  # ""
                 if playerBudget >= laserTowerCost:
-                    picButton('"Laser" (%s)' % (laserTowerCost),
-                              400, 35, 50, 50, "Towers/Laser_Full", placeTower, 3)
+                    picButton('"Laser"\n(%s)' % (laserTowerCost),
+                              415, 30, 50, 50, "Towers/Laser_Full", placeTower, 3)
                 else:
                     pass  # ""
             else:
@@ -690,7 +709,6 @@ def main():
                 # print "frameCounter = ", frameCounter
                 if frameCounter == 1:
                     spawnRate, creepCount, spawnList = getWaveInfo(waveNo)
-                print "creep list in main loop: ", creep_List
                 if frameCounter % spawnRate == 0:  # spawns a new creep from spawnList in accordance with spawnRate for that wave
                     if len(spawnList) > 0:
                         print "adding creep %s to creep_List" % (spawnList[0])
@@ -722,10 +740,6 @@ def main():
                             checkSelected(mouse, click, i)
                         i.render()
 
-                """
-    			for i in rocket_List:
-    				i.render()
-    			"""
                 if len(creep_List) > 0:
                     for i in creep_List:
                         if not creepHealthCheck(i):
@@ -764,17 +778,30 @@ def getPlayerBudget(increaseAmount = None):
 
 
 def pauseGame():
-    from GlobalVars import canvas_width, canvas_height, soundEffectsVolume, musicVolume, soundEffects_List
+    from GlobalVars import canvas_width, canvas_height, soundEffectsVolume, musicVolume, soundEffects_List, grey
+    global soundEffectsVolume, musicVolume
+    soundEffectsVolume = musicVolume = 0.9
     semiTrans = pygame.Surface((canvas_width, canvas_height))
     semiTrans.set_alpha(128)  # alpha level
     semiTrans.fill((255, 255, 255))  # this fills the entire surface
     surface.blit(semiTrans, (0, 0))
+
+    x = y = 200
+    width, height = 800, 300
+
+    backgroundImg = pygame.image.load(
+        "Graphics/Sprites/Buttons/Blue_Highlighted.png").convert_alpha()
+    backgroundImg = pygame.transform.scale(backgroundImg, (width, height))
 
     pygame.mixer.pause()
 
     gamePaused = True
 
     while gamePaused:
+        soundUp = soundDown = musicUp = musicDown = False
+
+        surface.blit(backgroundImg, (x, y))  # x and y of background image
+
         button("Menu", 50, 50, 100, 50, "Blue", intro_menu)
         picButton("Save", (canvas_width - 400), 200, 60,
                   60, "Buttons/FloppyDisk", saveProgress)
@@ -784,22 +811,46 @@ def pauseGame():
 
         # while only measuring one sound, when volume is set, all volumes will
         # change
-        floatText = soundEffectsVolume * 100
-        print "\nCurrent Sound Effects Volume: %.0f%%" % (soundEffectsVolume * 100)
-        newSE_volume = float(raw_input(
-            "Please enter new Sound effects volume (0-100): "))
-        # " "
-        print "\nCurrent Music channel Volume: %.0f%%" % (musicVolume * 100)
-        newM_Volume = float(raw_input(
-            "Please enter new Music channel volume (0-100): "))
+        msg = ("Sound Effects Volume:    %.0f%%   \n" % (soundEffectsVolume * 100))
+        displayText(msg, mediumText, grey, (x + (width / 2)), (y + 100))
 
+        if soundEffectsVolume < 1.0:
+            soundUp = picButton("Volume Up", (x + (width - 100)), (y + 55), 40, 40, "Buttons/Arrow_Button", None)
+        if soundEffectsVolume > 0.0:
+            soundDown = picButton("Volume Down", (x + (width - 230)), (y + 55), 40, 40, "Buttons/Arrow_Button", None)
+
+        #print "\nCurrent Sound Effects Volume: %.0f%%" % (soundEffectsVolume * 100)
+        #newSE_volume = float(raw_input(
+        #    "Please enter new Sound effects volume (0-100): "))
+        # " "
+        msg = ("\nMusic channel Volume:    %.0f%%   " % (musicVolume * 100))
+        displayText(msg, mediumText, grey, (x + (width / 2)), (y + 100))
+        #newM_Volume = float(raw_input(
+        #    "Please enter new Music channel volume (0-100): "))
+
+        if musicVolume < 1.0:
+            musicUp = picButton("Volume Up", (x + (width - 100)), (y + 115), 40, 40, "Buttons/Arrow_Button", None)
+        if musicVolume > 0.0:
+            muicDown = picButton("Volume Down", (x + (width - 230)), (y + 115), 40, 40, "Buttons/Arrow_Button", None)
+
+        if soundUp:
+            pass
+        elif soundDown:
+            pass
+        elif musicUp:
+            pass
+        elif musicDown:
+            pass
+        """
         if newSE_volume != (soundEffectsVolume * 100):
             soundEffectsVolume = newSE_volume / 100
             print "new soundEffectsVolume: ", soundEffectsVolume
-            """
-            if pygame.mixer.Sound.get_num_channels > 0:
-                for i in pygame.mixer.Sound.get_num_channels:  # TODO 'i' needs to be the id/name of the sound playing not just a number
-            """
+
+
+            # if pygame.mixer.Sound.get_num_channels > 0:
+            #     for i in pygame.mixer.Sound.get_num_channels:  # TODO 'i' needs to be the id/name of the sound playing not just a number
+
+
             for i in soundEffects_List:
                 # TODO investigate: does this change currently playing sounds?
                 i.set_volume(soundEffectsVolume)
@@ -810,21 +861,27 @@ def pauseGame():
             musicVolume = newM_Volume / 100
             print "new musicVolume: ", musicVolume
 
-            """
-            for i in music_List:
-                print "\ni: ", i
-                # TODO investigate: does this change currently playing music?
-                i.set_volume(musicVolume)
-            """
+
+            #for i in music_List:
+            #    print "\ni: ", i
+            #    # TODO investigate: does this change currently playing music?
+            #    i.set_volume(musicVolume)
+
         else:
             print "This is already the set Music Volume!"
+        """
+
+        picButton("Unpause", (canvas_width - 120), 20, 60,
+                  60, "Buttons/Blue_Highlighted", None) #this will work!, just finish it
 
         # limits surface update rate to a maximum of 60 frames per second
         clock.tick(fps)
         # Pygame function to update surface with what has been blit-ed
         pygame.display.flip()
+        # if button pressed, gamePaused = False
 
     pygame.mixer.unpause()
+    # return to main method
 
 
 def checkSelected(mouse, click, curEntity):
@@ -1152,7 +1209,6 @@ def colourSelect(colour, x, y, size, previousColour):
             return colour
     return previousColour
 
-
 def colourPainter(colour):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
@@ -1310,15 +1366,6 @@ def getText(msg, x, y, width, height, charLimit=None):
                     # displaying text on screen
                     wordString = ''.join(txtString)
 
-        """
-        if len(wordString) > (wordString.find('left shift') + 10):
-            wordString = caps(wordString)
-        """
-        #displayText(wordString, largeText, black, (x + (width / 2)), (y + (height / 2) + 20))
-
-        # text = font.render(wordString, True, black, (x + (width / 2), ((y + (height / 2) + 20))
-        #surface.blit(text(text, (x + 20, y + 20)))
-
         clock.tick(fps)
         pygame.display.flip()
 
@@ -1344,8 +1391,8 @@ def saveMap():
 
         savedMapName = getText(
             "Type in the name of this map: ", 200, 200, 800, 300)
-        savedMapName = raw_input(
-            "Alternatively, you can type in the name of this map here: ")
+        """savedMapName = raw_input(
+            "Alternatively, you can type in the name of this map here: ")"""
 
         savedMapName = caps(savedMapName)
         print "temp mapname is :", savedMapName
@@ -1444,9 +1491,6 @@ def getWaveInfo(waveNo):
     waveFile.close()
     return spawnRate, creepCount, spawnList
 
-# creep constructor function ...
-
-
 def addCreep(creepVariant=None):
     from GlobalVars import creep_List
     #from Creep import Creep
@@ -1466,10 +1510,8 @@ def addCreep(creepVariant=None):
     else:
         print "no creepVariant number found!"
     creep_List.append(new_Creep)
-    print "addCreep: after append creep_list: ", creep_List
     # print "pygame.sprite.Sprite.groups: ", pygame.sprite.Sprite.groups
     # #TODO investigate Sprite.groups
-
 
 def creepHealthCheck(creep):
     from GlobalVars import death_List, playerBudget, creep_List
@@ -1493,11 +1535,6 @@ def creepHealthCheck(creep):
     else:
         return False
 
-# ------creep class goes here -------
-
-# Tower constructor function ...
-
-
 def placeTower(typeNo):
     from Tower import Tower
     from Rocketeer import Rocketeer
@@ -1517,11 +1554,6 @@ def placeTower(typeNo):
     tower_List.append(newTower)
 
     print "tower_List:", tower_List
-
-# ------tower class goes here ------
-
-
-# ------grid class goes here ------
 
 def pygame_quit():
     pygame.quit()
